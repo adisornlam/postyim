@@ -67,6 +67,13 @@ async function resolveSecret(
   return process.env[envName]?.trim() || undefined;
 }
 
+export async function getAmazonPartnerTag(): Promise<string> {
+  return resolveString(
+    SETTING_KEYS.amazon.partnerTag,
+    "AMAZON_PARTNER_TAG",
+  );
+}
+
 export async function getAmazonCredentials(): Promise<AmazonCredentials | null> {
   const accessKey = await resolveSecret(
     SETTING_KEYS.amazon.accessKey,
@@ -76,10 +83,7 @@ export async function getAmazonCredentials(): Promise<AmazonCredentials | null> 
     SETTING_KEYS.amazon.secretKey,
     "AMAZON_SECRET_KEY",
   );
-  const partnerTag = await resolveString(
-    SETTING_KEYS.amazon.partnerTag,
-    "AMAZON_PARTNER_TAG",
-  );
+  const partnerTag = await getAmazonPartnerTag();
   const region = await resolveString(
     SETTING_KEYS.amazon.region,
     "AMAZON_REGION",
@@ -158,17 +162,19 @@ export async function getCronSecret(): Promise<string | undefined> {
 
 export async function getAmazonSettingsSummary() {
   const credentials = await getAmazonCredentials();
+  const partnerTag = await getAmazonPartnerTag();
   const mock = await shouldUseAmazonMock();
 
   return {
     mock,
     configured: Boolean(credentials),
+    hasPartnerTag: Boolean(partnerTag),
     region: credentials?.region ?? (await resolveString(
       SETTING_KEYS.amazon.region,
       "AMAZON_REGION",
       "us-east-1",
     )),
-    partnerTag: credentials?.partnerTag ?? "",
+    partnerTag,
     hasAccessKey:
       (await hasStoredSecret(SETTING_KEYS.amazon.accessKey)) ||
       Boolean(process.env.AMAZON_ACCESS_KEY?.trim()),

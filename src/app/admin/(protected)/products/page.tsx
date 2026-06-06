@@ -1,4 +1,8 @@
+import Link from "next/link";
+
+import { ProductGenerateReviewButton } from "@/components/admin/product-generate-review-button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -21,11 +25,16 @@ export default async function AdminProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Products</h1>
-        <p className="text-muted-foreground">
-          Synced affiliate catalog ready for review generation.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight">Products</h1>
+          <p className="text-muted-foreground">
+            Synced or manually added affiliate catalog ready for review generation.
+          </p>
+        </div>
+        <Button render={<Link href="/admin/products/new" />}>
+          Add manual product
+        </Button>
       </div>
 
       <Card>
@@ -42,6 +51,7 @@ export default async function AdminProductsPage() {
                 <TableHead>Campaign</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Review</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -59,6 +69,12 @@ export default async function AdminProductsPage() {
                     <Badge variant="secondary">
                       {reviewStatus ?? "none"}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <ProductGenerateReviewButton
+                      productId={product.id}
+                      reviewStatus={reviewStatus}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,5 +1,6 @@
 import {
   getAmazonCredentials,
+  getAmazonPartnerTag,
   getCronSecret,
   getGeminiApiKey,
   getGeminiModelDraft,
@@ -55,14 +56,16 @@ function maskConfigured(value?: string) {
 
 export async function getAmazonIntegrationSection(): Promise<AdminSettingSection> {
   const summary = await getAmazonSettingsSummary();
-  const credentials = await getAmazonCredentials();
+  const partnerTag = await getAmazonPartnerTag();
   const mock = await shouldUseAmazonMock();
   const marketplace = getAmazonMarketplace(summary.region);
   const live = (await isAmazonConfigured()) && !mock;
+  const hasPartialConfig =
+    summary.hasPartnerTag || summary.hasAccessKey || summary.hasSecretKey;
 
   const status: AdminSettingStatus = live
     ? "ready"
-    : (await isAmazonConfigured())
+    : hasPartialConfig
       ? "warning"
       : "missing";
 
@@ -75,8 +78,12 @@ export async function getAmazonIntegrationSection(): Promise<AdminSettingSection
     summary: live
       ? `Live connection to ${marketplace.marketplace}`
       : mock
-        ? "Mock catalog enabled for development"
-        : "Connect marketplace credentials to enable live ingestion",
+        ? summary.hasPartnerTag
+          ? `Mock mode — partner tag ${partnerTag} saved; add PA-API keys when eligible`
+          : "Mock catalog enabled for development"
+        : hasPartialConfig
+          ? "Partially configured — add remaining PA-API credentials for live ingestion"
+          : "Connect marketplace credentials to enable live ingestion",
     storage: summary.storedInDatabase ? "database" : "environment",
     fields: [
       {
@@ -101,8 +108,8 @@ export async function getAmazonIntegrationSection(): Promise<AdminSettingSection
       },
       {
         label: "Partner tag",
-        value: credentials?.partnerTag || "Not configured",
-        status: credentials?.partnerTag ? "ready" : "missing",
+        value: partnerTag || "Not configured",
+        status: partnerTag ? "ready" : "missing",
       },
       {
         label: "Access key",
@@ -140,7 +147,9 @@ export async function getGeminiIntegrationSection(): Promise<AdminSettingSection
     summary: live
       ? "Live AI generation enabled"
       : mock
-        ? "Mock generator enabled for development"
+        ? summary.hasApiKey
+          ? "Mock mode — API key saved; disable mock to use live Gemini"
+          : "Mock generator enabled for development"
         : "Connect Gemini API key to enable live generation",
     storage: summary.storedInDatabase ? "database" : "environment",
     fields: [

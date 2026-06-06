@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Package,
   Plug,
+  Rocket,
   Server,
   Target,
   type LucideIcon,
@@ -40,6 +41,11 @@ export const adminNavGroups: AdminNavGroup[] = [
         href: "/admin/reviews",
         label: "Reviews",
         icon: FileText,
+      },
+      {
+        href: "/admin/launch",
+        label: "Launch checklist",
+        icon: Rocket,
       },
     ],
   },
@@ -89,6 +95,7 @@ const adminPageTitles: Array<{ href: string; title: string; exact?: boolean }> =
   [
     { href: "/admin", title: "Dashboard", exact: true },
     { href: "/admin/reviews", title: "Review queue" },
+    { href: "/admin/launch", title: "Launch checklist" },
     { href: "/admin/products", title: "Products" },
     { href: "/admin/campaigns", title: "Campaigns" },
     { href: "/admin/jobs", title: "Job logs" },

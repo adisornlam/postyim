@@ -11,7 +11,7 @@ export async function getAffiliateAdapter(
   switch (network) {
     case "amazon":
       if (await shouldUseAmazonMock()) {
-        return createMockAmazonAdapter();
+        return await createMockAmazonAdapter();
       }
       return createAmazonAdapter();
     case "clickbank":

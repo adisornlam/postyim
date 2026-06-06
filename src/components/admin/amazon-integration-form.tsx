@@ -15,6 +15,7 @@ const REGIONS = [
 
 export function AmazonIntegrationForm({
   initial,
+  onSaved,
 }: {
   initial: {
     mock: boolean;
@@ -23,6 +24,7 @@ export function AmazonIntegrationForm({
     hasAccessKey: boolean;
     hasSecretKey: boolean;
   };
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const [accessKey, setAccessKey] = useState("");
@@ -62,8 +64,8 @@ export function AmazonIntegrationForm({
 
       setAccessKey("");
       setSecretKey("");
-      setSuccess("Amazon marketplace settings saved to the encrypted database.");
-      router.refresh();
+      setSuccess("Amazon marketplace settings saved.");
+      onSaved?.() ?? router.refresh();
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -111,7 +113,7 @@ export function AmazonIntegrationForm({
         event.preventDefault();
         void saveConnection();
       }}
-      className="space-y-4 border-t pt-4"
+      className="space-y-4"
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">

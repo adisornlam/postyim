@@ -137,12 +137,27 @@ export async function generateReviewForProduct(
     throw new Error(`Campaign not found for product ${productId}`);
   }
 
+  const manualKeyword =
+    product.rawData &&
+    typeof product.rawData === "object" &&
+    "targetKeyword" in product.rawData &&
+    typeof (product.rawData as { targetKeyword?: unknown }).targetKeyword ===
+      "string"
+      ? (product.rawData as { targetKeyword: string }).targetKeyword
+      : undefined;
+
   const author = await pickAuthor();
-  const keyword = await resolveTargetKeyword({
-    campaignKeywords: campaign.keywords,
-    productTitle: product.title,
-    externalId: product.externalId,
-  });
+  const keyword = manualKeyword
+    ? await resolveTargetKeyword({
+        campaignKeywords: [manualKeyword],
+        productTitle: product.title,
+        externalId: product.externalId,
+      })
+    : await resolveTargetKeyword({
+        campaignKeywords: campaign.keywords,
+        productTitle: product.title,
+        externalId: product.externalId,
+      });
 
   let [review] = await db
     .select()

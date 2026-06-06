@@ -1,6 +1,4 @@
-import { AmazonIntegrationForm } from "@/components/admin/amazon-integration-form";
-import { GeminiIntegrationForm } from "@/components/admin/gemini-integration-form";
-import { SettingSectionCard } from "@/components/admin/setting-section-card";
+import { IntegrationsPanel } from "@/components/admin/integrations-panel";
 import { getAdminSession } from "@/lib/auth/session";
 import { getIntegrationSections } from "@/lib/admin/settings-status";
 import {
@@ -12,19 +10,18 @@ export default async function AdminIntegrationsSettingsPage() {
   const session = await getAdminSession();
   const canEdit = session?.role === "superadmin";
   const sections = await getIntegrationSections();
-  const [amazonSection, geminiSection] = sections;
   const [amazonSummary, geminiSummary] = await Promise.all([
     getAmazonSettingsSummary(),
     getGeminiSettingsSummary(),
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="space-y-1">
         <h2 className="text-xl font-semibold tracking-tight">Integrations</h2>
         <p className="text-sm text-muted-foreground">
-          Connect marketplace and AI services here. Secrets are encrypted in the
-          database and take effect immediately without rebuilding the app.
+          Connected services for product ingestion and AI review generation.
+          Select Configure to update credentials in an encrypted database store.
         </p>
         {!canEdit ? (
           <p className="text-sm text-amber-800">
@@ -33,32 +30,23 @@ export default async function AdminIntegrationsSettingsPage() {
         ) : null}
       </div>
 
-      <SettingSectionCard section={amazonSection}>
-        {canEdit ? (
-          <AmazonIntegrationForm
-            initial={{
-              mock: amazonSummary.mock,
-              region: amazonSummary.region,
-              partnerTag: amazonSummary.partnerTag,
-              hasAccessKey: amazonSummary.hasAccessKey,
-              hasSecretKey: amazonSummary.hasSecretKey,
-            }}
-          />
-        ) : null}
-      </SettingSectionCard>
-
-      <SettingSectionCard section={geminiSection}>
-        {canEdit ? (
-          <GeminiIntegrationForm
-            initial={{
-              mock: geminiSummary.mock,
-              modelDraft: geminiSummary.modelDraft,
-              modelFinal: geminiSummary.modelFinal,
-              hasApiKey: geminiSummary.hasApiKey,
-            }}
-          />
-        ) : null}
-      </SettingSectionCard>
+      <IntegrationsPanel
+        canEdit={canEdit}
+        sections={sections}
+        amazonInitial={{
+          mock: amazonSummary.mock,
+          region: amazonSummary.region,
+          partnerTag: amazonSummary.partnerTag,
+          hasAccessKey: amazonSummary.hasAccessKey,
+          hasSecretKey: amazonSummary.hasSecretKey,
+        }}
+        geminiInitial={{
+          mock: geminiSummary.mock,
+          modelDraft: geminiSummary.modelDraft,
+          modelFinal: geminiSummary.modelFinal,
+          hasApiKey: geminiSummary.hasApiKey,
+        }}
+      />
     </div>
   );
 }

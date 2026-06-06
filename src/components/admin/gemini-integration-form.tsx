@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 
 export function GeminiIntegrationForm({
   initial,
+  onSaved,
 }: {
   initial: {
     mock: boolean;
@@ -16,6 +17,7 @@ export function GeminiIntegrationForm({
     modelFinal: string;
     hasApiKey: boolean;
   };
+  onSaved?: () => void;
 }) {
   const router = useRouter();
   const [apiKey, setApiKey] = useState("");
@@ -52,8 +54,8 @@ export function GeminiIntegrationForm({
       }
 
       setApiKey("");
-      setSuccess("Gemini settings saved to the encrypted database.");
-      router.refresh();
+      setSuccess("Gemini settings saved.");
+      onSaved?.() ?? router.refresh();
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -101,7 +103,7 @@ export function GeminiIntegrationForm({
         event.preventDefault();
         void saveConnection();
       }}
-      className="space-y-4 border-t pt-4"
+      className="space-y-4"
     >
       <div className="space-y-2">
         <Label htmlFor="gemini-api-key">API key</Label>

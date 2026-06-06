@@ -106,6 +106,9 @@ export default async function AdminDashboardPage() {
           <Button variant="outline" render={<Link href="/admin/campaigns/new" />}>
             New campaign
           </Button>
+          <Button variant="outline" render={<Link href="/admin/launch" />}>
+            Launch checklist
+          </Button>
           <Button variant="outline" render={<Link href="/admin/products" />}>
             Browse catalog
           </Button>

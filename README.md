@@ -92,6 +92,9 @@ See **[docs/deployment.md](./docs/deployment.md)** for the full launch checklist
 | Author pages (E-E-A-T) | `/authors/[slug]` |
 | Product image sync | Auto-sync `media_assets` on ingestion |
 | Batch pipeline script | `pnpm pipeline:run` |
+| Manual Amazon products (pre-PA-API) | `/admin/products/new` |
+| Localhost → production sync | `pnpm sync:push` — see [docs/local-production-sync.md](./docs/local-production-sync.md) |
+| Launch checklist (A–H) | `/admin/launch` |
 
 ```bash
 # Run full pipeline locally (ingest → prices → generate)

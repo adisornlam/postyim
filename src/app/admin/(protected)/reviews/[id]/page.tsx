@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ReviewActionButtons } from "@/components/admin/review-action-buttons";
 import { ReviewQcPanel } from "@/components/admin/review-qc-panel";
+import { ReviewSyncPanel } from "@/components/admin/review-sync-panel";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { getReviewDetailForAdmin } from "@/lib/reviews/queries";
 import { evaluateReviewById } from "@/lib/ai/review-qc";
+import { getRemoteSyncConfig } from "@/lib/sync/config";
 
 export default async function AdminReviewDetailPage({
   params,
@@ -28,6 +30,7 @@ export default async function AdminReviewDetailPage({
 
   const { review, product, author, keyword, campaign, qualityScore } = detail;
   const qcReport = await evaluateReviewById(id);
+  const remote = getRemoteSyncConfig();
 
   return (
     <div className="space-y-6">
@@ -58,6 +61,14 @@ export default async function AdminReviewDetailPage({
         </Card>
 
         <div className="space-y-4">
+          <ReviewSyncPanel
+            reviewId={review.id}
+            reviewSlug={review.slug}
+            reviewStatus={review.status}
+            remoteConfigured={remote.isConfigured}
+            remoteUrl={remote.remoteUrl}
+          />
+
           <ReviewQcPanel
             passed={qcReport.passed}
             overallScore={qcReport.overallScore}

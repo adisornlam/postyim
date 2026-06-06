@@ -3,6 +3,8 @@ import type {
   RawProduct,
   SearchParams,
 } from "@/lib/affiliate/types";
+import { buildAmazonAffiliateLink } from "@/lib/affiliate/links";
+import { getAmazonPartnerTag } from "@/lib/settings/runtime-config";
 
 const MOCK_PRODUCTS: RawProduct[] = [
   {
@@ -79,9 +81,14 @@ const MOCK_PRODUCTS: RawProduct[] = [
 
 export class MockAmazonAdapter implements AffiliateAdapter {
   readonly network = "amazon" as const;
+  private readonly partnerTag: string;
+
+  constructor(partnerTag: string) {
+    this.partnerTag = partnerTag;
+  }
 
   buildAffiliateLink(externalId: string): string {
-    return `https://www.amazon.com/dp/${externalId}?tag=mock-partner-20`;
+    return buildAmazonAffiliateLink(externalId, this.partnerTag);
   }
 
   async searchProducts(params: SearchParams): Promise<RawProduct[]> {
@@ -118,6 +125,7 @@ export class MockAmazonAdapter implements AffiliateAdapter {
   }
 }
 
-export function createMockAmazonAdapter(): MockAmazonAdapter {
-  return new MockAmazonAdapter();
+export async function createMockAmazonAdapter(): Promise<MockAmazonAdapter> {
+  const partnerTag = (await getAmazonPartnerTag()) || "mock-partner-20";
+  return new MockAmazonAdapter(partnerTag);
 }
