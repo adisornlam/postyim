@@ -169,7 +169,8 @@ export async function generateDiscoveryJson<T>(input: {
   if (!researchText) {
     throw new Error(
       describeEmptyGeminiResponse(
-        searchResponse ?? ({ candidates: [] } as GenerateContentResponse),
+        searchResponse ??
+          ({ candidates: [] } as unknown as GenerateContentResponse),
       ),
     );
   }

@@ -1,0 +1,17 @@
+---
+description: Run production build after code changes to catch deploy failures
+alwaysApply: true
+---
+
+# Verify build before finishing
+
+After any code change in this project, run `pnpm build` before claiming the work is complete.
+
+- `pnpm lint` alone is not enough — TypeScript and Next.js bundling errors only surface at build time.
+- Fix all build errors before handing off; do not leave deploy-breaking issues for CI/production.
+- If build fails, fix the root cause and re-run `pnpm build` until it passes.
+
+Typical build-only failures to watch for:
+- Client components importing server-only modules (e.g. `postgres`, `drizzle` DB code)
+- Invalid type casts that pass ESLint but fail `tsc`
+- Next.js App Router boundary violations
