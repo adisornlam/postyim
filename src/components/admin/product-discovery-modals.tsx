@@ -7,6 +7,7 @@ import {
   Loader2,
   Search,
   Sparkles,
+  XCircle,
 } from "lucide-react";
 
 import {
@@ -143,17 +144,31 @@ function phaseIndex(phase: DiscoveryPhase) {
   return DISCOVERY_PHASES.indexOf(phase);
 }
 
+function lastActivePhaseFromLogs(logs: DiscoveryLogEntry[]): DiscoveryPhase {
+  for (let index = logs.length - 1; index >= 0; index -= 1) {
+    const phase = logs[index].phase;
+
+    if (phase && phase !== "failed" && phase !== "complete") {
+      return phase;
+    }
+  }
+
+  return "search";
+}
+
 function PhaseStep({
   label,
   state,
 }: {
   label: string;
-  state: "done" | "active" | "pending";
+  state: "done" | "active" | "failed" | "pending";
 }) {
   return (
     <li className="flex items-center gap-2 text-sm">
       {state === "done" ? (
         <CheckCircle2 className="size-4 shrink-0 text-emerald-600" aria-hidden />
+      ) : state === "failed" ? (
+        <XCircle className="size-4 shrink-0 text-destructive" aria-hidden />
       ) : state === "active" ? (
         <Loader2 className="size-4 shrink-0 animate-spin text-[var(--review-accent)]" aria-hidden />
       ) : (
@@ -163,6 +178,7 @@ function PhaseStep({
         className={cn(
           state === "active" && "font-medium text-foreground",
           state === "done" && "text-foreground",
+          state === "failed" && "font-medium text-destructive",
           state === "pending" && "text-muted-foreground",
         )}
       >
@@ -203,7 +219,17 @@ export function DiscoveryProgressDialog({
     return () => window.clearInterval(timer);
   }, [open, startedAt, failed, progress?.phase]);
 
-  const activeIndex = progress ? phaseIndex(progress.phase) : 0;
+  const failedAtPhase = useMemo(
+    () => (failed ? lastActivePhaseFromLogs(logs) : null),
+    [failed, logs],
+  );
+
+  const activeIndex =
+    failed && failedAtPhase
+      ? phaseIndex(failedAtPhase)
+      : progress
+        ? phaseIndex(progress.phase)
+        : 0;
   const percent = progress?.percent ?? 5;
 
   const visibleLogs = useMemo(() => logs.slice(-8), [logs]);
@@ -261,11 +287,15 @@ export function DiscoveryProgressDialog({
               {DISCOVERY_PHASES.filter((phase) => phase !== "complete").map(
                 (phase, index) => {
                   const state =
-                    activeIndex > index
+                    failed && activeIndex > index
                       ? "done"
-                      : activeIndex === index
-                        ? "active"
-                        : "pending";
+                      : failed && activeIndex === index
+                        ? "failed"
+                        : activeIndex > index
+                          ? "done"
+                          : activeIndex === index
+                            ? "active"
+                            : "pending";
 
                   return (
                     <PhaseStep
@@ -324,6 +354,13 @@ export function DiscoveryProgressDialog({
                 )}
               </ul>
             </div>
+
+            {failed ? (
+              <p className="text-xs text-muted-foreground">
+                The background job reported an error. Status checks still return
+                HTTP 200 — open Admin → Job logs for full server details.
+              </p>
+            ) : null}
 
             {failed || progress?.phase === "complete" ? (
               <div className="flex justify-end border-t pt-4">

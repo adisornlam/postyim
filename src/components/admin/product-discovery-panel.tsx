@@ -197,11 +197,13 @@ export function ProductDiscoveryPanel({
           : "Discovery failed";
 
       setProgressFailed(true);
-      setProgress({
+      setProgress((prev) => ({
         phase: "failed",
-        percent: 0,
+        percent: prev?.percent ?? 45,
         message,
-      });
+        searchedQueries: prev?.searchedQueries,
+        candidateCount: prev?.candidateCount,
+      }));
       setError(message);
     } finally {
       setRunning(false);

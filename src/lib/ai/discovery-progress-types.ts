@@ -49,6 +49,20 @@ export type DiscoveryLogEntry = {
   createdAt: string;
 };
 
+function lastProgressFromLogs(
+  logs: DiscoveryLogEntry[],
+): DiscoveryLogEntry | undefined {
+  return [...logs]
+    .reverse()
+    .find(
+      (log) =>
+        typeof log.percent === "number" &&
+        log.phase &&
+        log.phase !== "failed" &&
+        log.phase !== "complete",
+    );
+}
+
 export function resolveDiscoveryProgress(input: {
   state: "pending" | "running" | "completed" | "failed" | "cancelled";
   logs: DiscoveryLogEntry[];
@@ -56,10 +70,26 @@ export function resolveDiscoveryProgress(input: {
   error?: string;
 }): DiscoveryProgressSnapshot {
   if (input.state === "failed") {
+    const lastLog = lastProgressFromLogs(input.logs);
+    const lastPhase =
+      input.storedProgress?.phase ??
+      lastLog?.phase ??
+      "search";
+    const lastPercent =
+      input.storedProgress?.percent ??
+      lastLog?.percent ??
+      DISCOVERY_PHASE_PERCENT[
+        lastPhase === "failed" || lastPhase === "complete"
+          ? "search"
+          : lastPhase
+      ];
+
     return {
       phase: "failed",
-      percent: 0,
+      percent: lastPercent,
       message: input.error ?? "Discovery failed",
+      searchedQueries: input.storedProgress?.searchedQueries,
+      candidateCount: input.storedProgress?.candidateCount,
     };
   }
 

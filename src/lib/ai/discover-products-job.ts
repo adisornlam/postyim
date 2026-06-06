@@ -171,6 +171,15 @@ export async function runDiscoveryJobRun(jobRunId: string) {
     const message =
       error instanceof Error ? error.message : "Product discovery failed";
 
+    const [freshRun] = await db
+      .select({ errorDetails: jobRuns.errorDetails })
+      .from(jobRuns)
+      .where(eq(jobRuns.id, jobRunId))
+      .limit(1);
+
+    const freshDetails = freshRun?.errorDetails as DiscoveryJobDetails | null;
+    const lastProgress = freshDetails?.progress;
+
     await db
       .update(jobRuns)
       .set({
@@ -178,6 +187,11 @@ export async function runDiscoveryJobRun(jobRunId: string) {
           kind: DISCOVERY_JOB_KIND,
           input: details.input,
           error: message,
+          progress: lastProgress ?? {
+            phase: "search",
+            percent: 45,
+            message,
+          },
         } satisfies DiscoveryJobDetails,
       })
       .where(eq(jobRuns.id, jobRunId));
