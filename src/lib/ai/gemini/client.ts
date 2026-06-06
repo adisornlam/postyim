@@ -41,17 +41,21 @@ export async function getQualityEvaluationModel(): Promise<string> {
 
 export async function generateDiscoveryJson<T>(input: {
   model: string;
+  searchModel?: string;
   searchPrompt: string;
   structurePrompt: string;
   schema: Record<string, unknown>;
+  onSearchComplete?: (researchText: string) => void | Promise<void>;
+  onStructureStart?: () => void | Promise<void>;
 }): Promise<{ data: T; text: string; usage?: { promptTokens?: number; outputTokens?: number } }> {
   const ai = await getGeminiClient();
+  const searchModel = input.searchModel ?? input.model;
 
   const searchResponse = await ai.models.generateContent({
-    model: input.model,
+    model: searchModel,
     contents: input.searchPrompt,
     config: {
-      temperature: 0.35,
+      temperature: 0.25,
       tools: [{ googleSearch: {} }],
     },
   });
@@ -61,6 +65,10 @@ export async function generateDiscoveryJson<T>(input: {
   if (!researchText) {
     throw new Error("Gemini returned empty discovery research");
   }
+
+  await input.onSearchComplete?.(researchText);
+
+  await input.onStructureStart?.();
 
   const structured = await generateJson<T>({
     model: input.model,

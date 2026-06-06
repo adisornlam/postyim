@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { parseCampaignKeywords } from "@/lib/affiliate/types";
 import { listCampaignsForAdmin } from "@/lib/reviews/queries";
 import { getAmazonPartnerTag } from "@/lib/settings/runtime-config";
 
@@ -19,10 +20,12 @@ export default async function AdminNewProductPage() {
     getAmazonPartnerTag(),
   ]);
 
-  const campaignOptions = campaigns.map(({ campaign }) => ({
+  const campaignOptions = campaigns.map(({ campaign, category }) => ({
     id: campaign.id,
     name: campaign.name,
     slug: campaign.slug,
+    keywords: parseCampaignKeywords(campaign.keywords),
+    categoryName: category?.name ?? null,
   }));
 
   return (

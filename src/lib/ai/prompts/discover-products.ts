@@ -87,6 +87,8 @@ export function buildProductDiscoveryPrompt(input: {
 
 Use Google Search to find REAL, currently sold Amazon US products suitable for in-depth affiliate reviews.
 
+Run at most 3 focused Google searches (combine keywords efficiently — do not run separate searches for every seed keyword).
+
 Campaign: ${input.campaignName}
 Category focus: ${input.categoryName ?? "General home & lifestyle"}
 Seed keywords: ${input.keywords.join(", ")}

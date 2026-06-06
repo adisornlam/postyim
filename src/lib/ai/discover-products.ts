@@ -21,11 +21,16 @@ import {
   type ProductDiscoveryGeminiPayload,
 } from "@/lib/ai/prompts/discover-products";
 import { parseAmazonCampaignConfig, parseCampaignKeywords } from "@/lib/affiliate/types";
-import { shouldUseGeminiMock } from "@/lib/settings/runtime-config";
+import { reportDiscoveryProgress } from "@/lib/ai/discovery-progress";
+import {
+  getGeminiModelDraft,
+  shouldUseGeminiMock,
+} from "@/lib/settings/runtime-config";
 
 export interface DiscoverProductsInput {
   campaignId: string;
   limit?: number;
+  jobRunId?: string;
 }
 
 export interface DiscoverProductsOutput {
@@ -93,6 +98,11 @@ export async function discoverProductsForCampaign(
 
   const excludeAsins = existingProducts.map((p) => p.externalId.toUpperCase());
 
+  await reportDiscoveryProgress(input.jobRunId, {
+    phase: "prepare",
+    message: `Loaded campaign "${row.campaign.name}" with ${keywords.length} keyword${keywords.length === 1 ? "" : "s"}`,
+  });
+
   if (await shouldUseGeminiMock()) {
     const mockResult = generateMockProductDiscovery({
       campaignName: row.campaign.name,
@@ -127,12 +137,36 @@ export async function discoverProductsForCampaign(
   });
 
   const model = await getReviewGenerationModel();
+  const searchModel = await getGeminiModelDraft();
+
+  await reportDiscoveryProgress(input.jobRunId, {
+    phase: "search",
+    message: `Searching Amazon via Google for: ${keywords.slice(0, 3).join(", ")}${keywords.length > 3 ? "…" : ""} (may take 1–2 minutes)`,
+  });
 
   const response = await generateDiscoveryJson<ProductDiscoveryGeminiPayload>({
     model,
+    searchModel,
     searchPrompt,
     structurePrompt: buildProductDiscoveryStructurePrompt({ limit }),
     schema: productDiscoveryJsonSchema,
+    onSearchComplete: async (researchPreview) => {
+      const queryMatches = researchPreview.match(/(?:query|search)[^:\n]*:\s*(.+)/gi);
+      const previewQueries = queryMatches?.slice(0, 3).map((line) => line.trim()) ?? [];
+
+      await reportDiscoveryProgress(input.jobRunId, {
+        phase: "search",
+        message: previewQueries.length
+          ? `Research complete — ${previewQueries.length} search angle${previewQueries.length === 1 ? "" : "s"} covered`
+          : "Research complete — structuring product candidates",
+      });
+    },
+    onStructureStart: async () => {
+      await reportDiscoveryProgress(input.jobRunId, {
+        phase: "structure",
+        message: "Structuring candidates into ranked JSON…",
+      });
+    },
   });
 
   const parsed = productDiscoveryResultSchema.parse({
@@ -151,6 +185,15 @@ export async function discoverProductsForCampaign(
     (c) => !excludeAsins.includes(normalizeAsin(c.asin)),
   );
 
+  const finalCandidates = dedupeCandidates(filtered).slice(0, limit);
+
+  await reportDiscoveryProgress(input.jobRunId, {
+    phase: "finalize",
+    message: `${finalCandidates.length} candidate${finalCandidates.length === 1 ? "" : "s"} ready after filtering duplicates`,
+    searchedQueries: parsed.searchedQueries,
+    candidateCount: finalCandidates.length,
+  });
+
   return {
     mode: "live",
     model,
@@ -158,7 +201,7 @@ export async function discoverProductsForCampaign(
     campaignName: row.campaign.name,
     result: {
       ...parsed,
-      candidates: dedupeCandidates(filtered).slice(0, limit),
+      candidates: finalCandidates,
     },
     usage: response.usage,
   };

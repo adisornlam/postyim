@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { discoverProductsForCampaign } from "@/lib/ai/discover-products";
+import {
+  createDiscoveryJobRun,
+  startDiscoveryJobRun,
+} from "@/lib/ai/discover-products-job";
 import { requireAdminSession } from "@/lib/admin/require-admin";
+import { shouldUseGeminiMock } from "@/lib/settings/runtime-config";
 
 const discoverRequestSchema = z.object({
   campaignId: z.string().uuid(),
@@ -18,9 +23,24 @@ export async function POST(request: Request) {
 
   try {
     const body = discoverRequestSchema.parse(await request.json());
-    const result = await discoverProductsForCampaign(body);
 
-    return NextResponse.json({ status: "ok", ...result });
+    if (await shouldUseGeminiMock()) {
+      const result = await discoverProductsForCampaign(body);
+      return NextResponse.json({ status: "ok", ...result });
+    }
+
+    const jobRun = await createDiscoveryJobRun(body);
+    startDiscoveryJobRun(jobRun.id);
+
+    return NextResponse.json(
+      {
+        status: "accepted",
+        jobRunId: jobRun.id,
+        message:
+          "Discovery started. Gemini search can take 1–3 minutes — keep this page open.",
+      },
+      { status: 202 },
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Product discovery failed";

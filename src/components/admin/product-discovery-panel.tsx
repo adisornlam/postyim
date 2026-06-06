@@ -1,20 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Loader2, Search, Sparkles } from "lucide-react";
 
 import type { DiscoveryCandidate } from "@/lib/ai/discovery-types";
+import type {
+  DiscoveryLogEntry,
+  DiscoveryProgressSnapshot,
+} from "@/lib/ai/discovery-progress";
+import {
+  DiscoveryConfirmDialog,
+  DiscoveryProgressDialog,
+  type DiscoveryCampaignOption,
+} from "@/components/admin/product-discovery-modals";
 import { commissionRateLabel } from "@/lib/affiliate/amazon-commission-rates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-
-type CampaignOption = {
-  id: string;
-  name: string;
-  slug: string;
-};
 
 type DiscoveryResponse = {
   status: "ok";
@@ -29,24 +32,115 @@ type DiscoveryResponse = {
   error?: string;
 };
 
+type DiscoveryAcceptedResponse = {
+  status: "accepted";
+  jobRunId: string;
+  message?: string;
+};
+
+type DiscoveryStatusResponse = {
+  status: "ok";
+  job: {
+    jobRunId: string;
+    state: "pending" | "running" | "completed" | "failed" | "cancelled";
+    durationMs?: number | null;
+    output?: Omit<DiscoveryResponse, "status">;
+    error?: string;
+    progress?: DiscoveryProgressSnapshot;
+    logs?: DiscoveryLogEntry[];
+  };
+  error?: string;
+};
+
+const DISCOVERY_POLL_MS = 2000;
+const DISCOVERY_POLL_TIMEOUT_MS = 5 * 60 * 1000;
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function pollDiscoveryJob(
+  jobRunId: string,
+  onUpdate: (job: DiscoveryStatusResponse["job"]) => void,
+): Promise<DiscoveryResponse> {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < DISCOVERY_POLL_TIMEOUT_MS) {
+    const response = await fetch(
+      `/api/admin/products/discover/status?jobRunId=${jobRunId}`,
+      { cache: "no-store" },
+    );
+
+    const data = (await response.json()) as DiscoveryStatusResponse & {
+      error?: string;
+    };
+
+    if (!response.ok) {
+      throw new Error(data.error ?? "Failed to check discovery status");
+    }
+
+    onUpdate(data.job);
+
+    if (data.job.state === "completed" && data.job.output) {
+      return { status: "ok", ...data.job.output } as DiscoveryResponse;
+    }
+
+    if (data.job.state === "failed") {
+      throw new Error(data.job.error ?? "Product discovery failed");
+    }
+
+    await sleep(DISCOVERY_POLL_MS);
+  }
+
+  throw new Error(
+    "Discovery is taking longer than expected. Check Admin → Job logs and try again.",
+  );
+}
+
 export function ProductDiscoveryPanel({
   campaigns,
 }: {
-  campaigns: CampaignOption[];
+  campaigns: DiscoveryCampaignOption[];
 }) {
   const router = useRouter();
   const [campaignId, setCampaignId] = useState(campaigns[0]?.id ?? "");
-  const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [progressFailed, setProgressFailed] = useState(false);
+  const [progress, setProgress] = useState<DiscoveryProgressSnapshot | null>(null);
+  const [progressLogs, setProgressLogs] = useState<DiscoveryLogEntry[]>([]);
+  const [progressStartedAt, setProgressStartedAt] = useState<number | null>(null);
   const [importingAsin, setImportingAsin] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [discovery, setDiscovery] = useState<DiscoveryResponse | null>(null);
 
-  async function handleDiscover() {
+  const selectedCampaign = useMemo(
+    () => campaigns.find((campaign) => campaign.id === campaignId) ?? null,
+    [campaigns, campaignId],
+  );
+
+  function openConfirmDialog() {
     if (!campaignId) {
       return;
     }
 
-    setLoading(true);
+    setError(null);
+    setConfirmOpen(true);
+  }
+
+  async function startDiscovery() {
+    if (!campaignId) {
+      return;
+    }
+
+    setConfirmOpen(false);
+    setRunning(true);
+    setProgressFailed(false);
+    setProgress(null);
+    setProgressLogs([]);
+    setProgressStartedAt(Date.now());
+    setProgressOpen(true);
     setError(null);
     setDiscovery(null);
 
@@ -57,21 +151,60 @@ export function ProductDiscoveryPanel({
         body: JSON.stringify({ campaignId, limit: 10 }),
       });
 
-      const data = (await response.json()) as DiscoveryResponse & { error?: string };
+      const data = (await response.json()) as
+        | DiscoveryResponse
+        | DiscoveryAcceptedResponse
+        & { error?: string };
 
       if (!response.ok) {
         throw new Error(data.error ?? "Discovery failed");
       }
 
-      setDiscovery(data);
+      if (response.status === 202 && data.status === "accepted") {
+        setProgress({
+          phase: "prepare",
+          percent: 5,
+          message: data.message ?? "Discovery worker started…",
+        });
+
+        const result = await pollDiscoveryJob(data.jobRunId, (job) => {
+          setProgress(job.progress ?? null);
+          setProgressLogs(job.logs ?? []);
+        });
+
+        setDiscovery(result);
+        setProgress({
+          phase: "complete",
+          percent: 100,
+          message: `Found ${result.result.candidates.length} candidate${result.result.candidates.length === 1 ? "" : "s"}`,
+          searchedQueries: result.result.searchedQueries,
+          candidateCount: result.result.candidates.length,
+        });
+        return;
+      }
+
+      if (data.status === "ok") {
+        setProgressOpen(false);
+        setDiscovery(data as DiscoveryResponse);
+        return;
+      }
+
+      throw new Error("Unexpected discovery response");
     } catch (discoverError) {
-      setError(
+      const message =
         discoverError instanceof Error
           ? discoverError.message
-          : "Discovery failed",
-      );
+          : "Discovery failed";
+
+      setProgressFailed(true);
+      setProgress({
+        phase: "failed",
+        percent: 0,
+        message,
+      });
+      setError(message);
     } finally {
-      setLoading(false);
+      setRunning(false);
     }
   }
 
@@ -113,6 +246,7 @@ export function ProductDiscoveryPanel({
             className="flex h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
             value={campaignId}
             onChange={(event) => setCampaignId(event.target.value)}
+            disabled={running}
           >
             {campaigns.map((campaign) => (
               <option key={campaign.id} value={campaign.id}>
@@ -126,17 +260,38 @@ export function ProductDiscoveryPanel({
           </p>
         </div>
 
-        <Button type="button" disabled={loading || !campaignId} onClick={handleDiscover}>
-          {loading ? (
+        <Button
+          type="button"
+          disabled={running || !campaignId}
+          onClick={openConfirmDialog}
+        >
+          {running ? (
             <Loader2 className="size-4 animate-spin" aria-hidden />
           ) : (
             <Search className="size-4" aria-hidden />
           )}
-          {loading ? "Discovering..." : "Discover products"}
+          {running ? "Discovering…" : "Discover products"}
         </Button>
       </div>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+      <DiscoveryConfirmDialog
+        open={confirmOpen}
+        campaign={selectedCampaign}
+        onOpenChange={setConfirmOpen}
+        onConfirm={startDiscovery}
+      />
+
+      <DiscoveryProgressDialog
+        open={progressOpen}
+        campaignName={selectedCampaign?.name ?? "Campaign"}
+        progress={progress}
+        logs={progressLogs}
+        startedAt={progressStartedAt}
+        failed={progressFailed}
+        onOpenChange={setProgressOpen}
+      />
 
       {discovery ? (
         <div className="space-y-4">
@@ -221,7 +376,9 @@ export function ProductDiscoveryPanel({
                       ) : (
                         <Sparkles className="size-3.5" aria-hidden />
                       )}
-                      {importingAsin === candidate.asin ? "Importing..." : "Import & generate later"}
+                      {importingAsin === candidate.asin
+                        ? "Importing..."
+                        : "Import & generate later"}
                     </Button>
                   </div>
                 </article>
