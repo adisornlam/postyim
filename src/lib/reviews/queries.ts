@@ -70,6 +70,22 @@ export async function getPublishedReviewBySlug(slug: string) {
   return row;
 }
 
+export async function resolvePublishedReviewRoute(slug: string) {
+  const data = await getPublishedReviewBySlug(slug);
+
+  if (data) {
+    return { kind: "found" as const, slug, data };
+  }
+
+  const redirectSlug = await findPublishedReviewSlugRedirect(slug);
+
+  if (redirectSlug) {
+    return { kind: "redirect" as const, slug: redirectSlug };
+  }
+
+  return { kind: "not-found" as const };
+}
+
 export async function getPublishedReviewSlugs(limit = 100) {
   return db
     .select({ slug: reviews.slug, updatedAt: reviews.updatedAt })

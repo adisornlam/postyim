@@ -5,6 +5,10 @@ import {
   verifyRemoteSyncAuth,
 } from "@/lib/sync/auth";
 import { importSyncBundle } from "@/lib/sync/import-bundle";
+import {
+  legacySlugsFromProductRawData,
+  revalidateAfterSync,
+} from "@/lib/sync/revalidate-paths";
 import { SYNC_BUNDLE_VERSION } from "@/lib/sync/types";
 
 const syncBundleSchema = z.object({
@@ -94,6 +98,12 @@ export async function POST(request: Request) {
 
   try {
     const result = await importSyncBundle(parsed.data);
+    revalidateAfterSync({
+      reviewSlug: parsed.data.review?.slug,
+      legacyReviewSlugs: legacySlugsFromProductRawData(
+        parsed.data.product.rawData,
+      ),
+    });
     return Response.json({ status: "ok", result });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Sync import failed";

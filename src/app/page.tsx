@@ -4,6 +4,8 @@ import {
   getFeaturedPublishedReviews,
 } from "@/lib/reviews/queries";
 
+export const revalidate = 300;
+
 export default async function HomePage() {
   const [featuredReviews, categories] = await Promise.all([
     getFeaturedPublishedReviews(6),
