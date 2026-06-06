@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { campaigns, categories, products } from "@/db/schema";
 import {
   generateDiscoveryJson,
-  getQualityEvaluationModel,
+  getReviewGenerationModel,
 } from "@/lib/ai/gemini/client";
 import {
   discoveryCandidateSchema,
@@ -125,7 +125,7 @@ export async function discoverProductsForCampaign(
     minRating: config.minRating,
   });
 
-  const model = await getQualityEvaluationModel();
+  const model = await getReviewGenerationModel();
 
   const response = await generateDiscoveryJson<ProductDiscoveryGeminiPayload>({
     model,

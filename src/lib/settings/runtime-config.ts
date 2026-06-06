@@ -119,20 +119,37 @@ export async function getGeminiApiKey(): Promise<string | undefined> {
   return resolveSecret(SETTING_KEYS.gemini.apiKey, "GEMINI_API_KEY");
 }
 
+const DEPRECATED_GEMINI_MODELS: Record<string, string> = {
+  "gemini-2.0-flash": "gemini-2.5-flash",
+  "gemini-2.0-flash-lite": "gemini-2.5-flash",
+  "gemini-2.0-pro": "gemini-2.5-flash",
+  "gemini-1.5-flash": "gemini-2.5-flash",
+  "gemini-1.5-pro": "gemini-2.5-flash",
+};
+
+function normalizeGeminiModel(model: string): string {
+  const trimmed = model.trim();
+  return DEPRECATED_GEMINI_MODELS[trimmed] ?? trimmed;
+}
+
 export async function getGeminiModelDraft(): Promise<string> {
-  return resolveString(
+  const model = await resolveString(
     SETTING_KEYS.gemini.modelDraft,
     "GEMINI_MODEL_DRAFT",
-    "gemini-2.0-flash",
+    "gemini-2.5-flash",
   );
+
+  return normalizeGeminiModel(model);
 }
 
 export async function getGeminiModelFinal(): Promise<string> {
-  return resolveString(
+  const model = await resolveString(
     SETTING_KEYS.gemini.modelFinal,
     "GEMINI_MODEL_FINAL",
     "gemini-2.5-flash",
   );
+
+  return normalizeGeminiModel(model);
 }
 
 export async function isGeminiConfigured(): Promise<boolean> {
