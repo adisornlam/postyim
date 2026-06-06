@@ -26,6 +26,15 @@ const syncBundleSchema = z.object({
     specs: z.record(z.string(), z.unknown()).optional(),
     rawData: z.unknown().optional(),
     categorySlug: z.string().optional(),
+    mediaAssets: z
+      .array(
+        z.object({
+          url: z.string().url(),
+          altText: z.string().nullable().optional(),
+          sortOrder: z.number().int(),
+        }),
+      )
+      .optional(),
   }),
   review: z
     .object({
