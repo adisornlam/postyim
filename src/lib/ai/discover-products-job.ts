@@ -81,43 +81,7 @@ export async function triggerDiscoveryJobRun(jobRunId: string) {
 }
 
 export function startDiscoveryJobRun(jobRunId: string) {
-  void triggerDiscoveryJobRun(jobRunId).catch(async (error) => {
-    const message =
-      error instanceof Error ? error.message : "Failed to start discovery worker";
-
-    const [run] = await db
-      .select()
-      .from(jobRuns)
-      .where(eq(jobRuns.id, jobRunId))
-      .limit(1);
-
-    if (!run) {
-      return;
-    }
-
-    const details = run.errorDetails as DiscoveryJobDetails | null;
-    const startedAt = run.startedAt ?? new Date();
-
-    await db
-      .update(jobRuns)
-      .set({
-        errorDetails: {
-          kind: DISCOVERY_JOB_KIND,
-          input: details?.input ?? { campaignId: run.campaignId ?? "", limit: 10 },
-          error: message,
-        } satisfies DiscoveryJobDetails,
-      })
-      .where(eq(jobRuns.id, jobRunId));
-
-    await finishJobRun({
-      jobRunId,
-      status: "failed",
-      itemsProcessed: 0,
-      itemsFailed: 1,
-      startedAt,
-      errorDetails: { message },
-    });
-  });
+  void runDiscoveryJobRun(jobRunId);
 }
 
 export async function runDiscoveryJobRun(jobRunId: string) {
@@ -224,7 +188,6 @@ export async function runDiscoveryJobRun(jobRunId: string) {
       itemsProcessed: 0,
       itemsFailed: 1,
       startedAt,
-      errorDetails: { message },
     });
 
     await logJobEvent({
@@ -252,7 +215,21 @@ export async function getDiscoveryJobStatus(jobRunId: string) {
   const details = run.errorDetails as DiscoveryJobDetails | null;
 
   if (!details || details.kind !== DISCOVERY_JOB_KIND) {
-    return null;
+    return {
+      jobRunId: run.id,
+      status: run.status,
+      durationMs: run.durationMs,
+      output: undefined,
+      error:
+        "Discovery job metadata is missing or invalid. Start a new discovery run.",
+      progress: {
+        phase: "failed",
+        percent: 0,
+        message: "Discovery job metadata is missing or invalid.",
+      },
+      logs: [],
+      invalid: true as const,
+    };
   }
 
   const logs = await getDiscoveryJobLogs(jobRunId);

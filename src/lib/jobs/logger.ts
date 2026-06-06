@@ -69,7 +69,9 @@ export async function finishJobRun(input: {
       itemsProcessed: input.itemsProcessed,
       itemsFailed: input.itemsFailed,
       durationMs,
-      errorDetails: input.errorDetails,
+      ...(input.errorDetails !== undefined
+        ? { errorDetails: input.errorDetails }
+        : {}),
       completedAt: new Date(),
     })
     .where(eq(jobRuns.id, input.jobRunId));

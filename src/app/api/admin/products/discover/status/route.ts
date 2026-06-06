@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     status: "ok",
     job: {
       jobRunId: status.jobRunId,
-      state: status.status,
+      state: status.invalid ? "failed" : status.status,
       durationMs: status.durationMs,
       output: status.output,
       error: status.error,
