@@ -31,6 +31,7 @@ export const QUALITY_THRESHOLDS = {
   metaDescriptionMax: 160,
   minMarkdownHeadings: 3,
   minBodyImages: 3,
+  minProductBodyImages: 2,
   minHeroImages: 2,
 } as const;
 

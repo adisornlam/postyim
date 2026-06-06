@@ -4,12 +4,12 @@ import { db } from "@/db";
 import { campaigns, keywords, mediaAssets } from "@/db/schema";
 import { buildAmazonAffiliateLink } from "@/lib/affiliate/links";
 import { normalizeAmazonImageUrl } from "@/lib/products/amazon-image-url";
+import { resolveCoverImage } from "@/lib/products/image-roles";
 import {
   productResearchSchema,
   type ProductResearch,
 } from "@/lib/products/research-types";
 import { upsertProduct } from "@/lib/products/upsert";
-import { getEditorialImagesForProduct } from "@/lib/reviews/editorial-images";
 import { getAmazonPartnerTag } from "@/lib/settings/runtime-config";
 
 function researchToSpecs(research: ProductResearch): Record<string, unknown> {
@@ -49,9 +49,11 @@ export async function importProductResearch(input: unknown) {
   const normalizedImages = research.productImages.map((image, index) => ({
     url: normalizeAmazonImageUrl(image.url),
     alt: image.alt ?? `${research.title} photo ${index + 1}`,
+    role: image.role,
   }));
 
-  const primaryImage = normalizedImages[0];
+  const coverImage = resolveCoverImage(normalizedImages);
+  const primaryImage = coverImage ?? normalizedImages[0];
 
   let keywordId: string | null = null;
   const [existingKeyword] = await db
@@ -96,41 +98,13 @@ export async function importProductResearch(input: unknown) {
 
   await db.delete(mediaAssets).where(eq(mediaAssets.productId, product.id));
 
-  const editorial = getEditorialImagesForProduct({
-    externalId: research.asin,
-    title: research.title,
-  });
-  const lifestyleShot = editorial[0];
-
-  const galleryAssets = [
-    ...normalizedImages.slice(0, 2).map((image, index) => ({
-      productId: product.id,
-      type: "image" as const,
-      url: image.url,
-      altText: image.alt,
-      sortOrder: index,
-    })),
-    ...(lifestyleShot
-      ? [
-          {
-            productId: product.id,
-            type: "image" as const,
-            url: lifestyleShot.url,
-            altText:
-              lifestyleShot.caption ??
-              "Desk lamp in a real home office setup.",
-            sortOrder: 2,
-          },
-        ]
-      : []),
-    ...normalizedImages.slice(2).map((image, index) => ({
-      productId: product.id,
-      type: "image" as const,
-      url: image.url,
-      altText: image.alt,
-      sortOrder: index + 3,
-    })),
-  ];
+  const galleryAssets = normalizedImages.map((image, index) => ({
+    productId: product.id,
+    type: "image" as const,
+    url: image.url,
+    altText: image.alt,
+    sortOrder: index,
+  }));
 
   if (galleryAssets.length > 0) {
     await db.insert(mediaAssets).values(galleryAssets);

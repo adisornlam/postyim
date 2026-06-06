@@ -1,4 +1,5 @@
 import { DEFAULT_DISCLOSURE } from "@/lib/ai/constants";
+import { isAmazonProductImageUrl } from "@/lib/products/amazon-image-url";
 import { normalizeReviewContent } from "@/lib/reviews/normalize-content";
 
 import type { EditorialImage } from "./editorial-images";
@@ -6,6 +7,8 @@ import type { EditorialImage } from "./editorial-images";
 const TARGET_KEYWORD_PATTERN = /^target keyword:\s*.+$/gim;
 const DUPLICATE_PADDING_PATTERN =
   /During extended testing of the .+?, I kept returning to the same question:[\s\S]*?expensive impulse buy\./g;
+const MARKDOWN_IMAGE_REGEX =
+  /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/g;
 
 function stripEditorialNoise(content: string): string {
   return content
@@ -20,9 +23,46 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function sectionHasImage(content: string, headingIndex: number, nextHeadingIndex: number) {
+function sectionInlineImage(
+  content: string,
+  headingIndex: number,
+  nextHeadingIndex: number,
+) {
   const section = content.slice(headingIndex, nextHeadingIndex);
-  return /!\[[^\]]*\]\([^)]+\)/.test(section);
+  const match = section.match(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/);
+  return match ?? null;
+}
+
+function isProductInlineImageUrl(url: string): boolean {
+  return isAmazonProductImageUrl(url);
+}
+
+export function replaceStockInlineImages(
+  content: string,
+  images: EditorialImage[],
+): string {
+  if (images.length === 0) {
+    return content;
+  }
+
+  let imageIndex = 0;
+
+  return content.replace(
+    MARKDOWN_IMAGE_REGEX,
+    (match, alt: string, url: string, caption?: string) => {
+      if (isProductInlineImageUrl(url)) {
+        return match;
+      }
+
+      const image = images[imageIndex % images.length];
+      imageIndex += 1;
+
+      const nextAlt = alt.trim() || image.alt;
+      const nextCaption = caption?.trim() || image.caption || image.alt;
+
+      return `![${nextAlt}](${image.url} "${nextCaption}")`;
+    },
+  );
 }
 
 export function injectSectionImages(
@@ -53,7 +93,27 @@ export function injectSectionImages(
         ? (matches[index + 1].index ?? enriched.length)
         : enriched.length;
 
-    if (sectionHasImage(enriched, headingStart, nextHeadingStart)) {
+    const existing = sectionInlineImage(enriched, headingStart, nextHeadingStart);
+
+    if (existing) {
+      const url = existing[2] ?? "";
+
+      if (isProductInlineImageUrl(url)) {
+        continue;
+      }
+
+      const image = images[imageIndex % images.length];
+      imageIndex += 1;
+
+      const replacement = `![${image.alt}](${image.url} "${image.caption ?? image.alt}")`;
+      const sectionStart = headingStart;
+      const sectionEnd = nextHeadingStart + offset;
+      const section = enriched.slice(sectionStart, sectionEnd);
+      const nextSection = section.replace(existing[0], replacement);
+      const delta = nextSection.length - section.length;
+
+      enriched = enriched.slice(0, sectionStart) + nextSection + enriched.slice(sectionEnd);
+      offset += delta;
       continue;
     }
 
@@ -77,7 +137,8 @@ export function enrichReviewContent(
 ): string {
   const cleaned = stripEditorialNoise(content);
   const normalized = normalizeReviewContent(cleaned, images);
-  return injectSectionImages(normalized, images);
+  const withProductImages = replaceStockInlineImages(normalized, images);
+  return injectSectionImages(withProductImages, images);
 }
 
 export function buildFigureId(caption: string): string {

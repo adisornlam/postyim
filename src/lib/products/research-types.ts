@@ -1,9 +1,14 @@
 import { z } from "zod";
 
+import { PRODUCT_IMAGE_ROLES } from "@/lib/products/image-roles";
+
 export const productResearchImageSchema = z.object({
   url: z.string().url(),
   alt: z.string().trim().min(1).max(300).optional(),
+  role: z.enum(PRODUCT_IMAGE_ROLES).optional(),
 });
+
+export type ProductResearchImage = z.infer<typeof productResearchImageSchema>;
 
 export const productResearchSchema = z.object({
   asin: z.string().trim().min(8).max(20),

@@ -1,7 +1,7 @@
 {
   "asin": "B08LMTQ7ZF",
   "source": "amazon-research",
-  "researchedAt": "2026-06-06T09:15:00.000Z",
+  "researchedAt": "2026-06-06T12:00:00.000Z",
   "campaignId": "a5a262f1-3c29-49ff-a11a-fe7cce0a70c6",
   "title": "Lepro LED Desk Lamp for Home Office, 9.5W 750LM Metal Touch Control Desk Light, 5 Color Modes 5 Brightness Level, Eye Caring Task Lamp For Reading, Sewing, Crafts, School Supplies, Puzzle Light, Black",
   "description": "Compact metal desk lamp with 5 color temperatures, 5 brightness levels, eye-care diffused lighting, and memory function for home office and reading.",
@@ -62,19 +62,33 @@
   "productImages": [
     {
       "url": "https://m.media-amazon.com/images/I/51aiEGGoX5L._AC_SL1500_.jpg",
-      "alt": "Lepro LED Desk Lamp front view on desk"
-    },
-    {
-      "url": "https://m.media-amazon.com/images/I/41Z1LgP3cGL._AC_SL1500_.jpg",
-      "alt": "Lepro LED Desk Lamp side angle"
-    },
-    {
-      "url": "https://m.media-amazon.com/images/I/41kNDTpo7hL._AC_SL1500_.jpg",
-      "alt": "Lepro LED Desk Lamp touch control detail"
+      "alt": "Lepro LED desk lamp — full product hero on desk",
+      "role": "hero"
     },
     {
       "url": "https://m.media-amazon.com/images/I/41HmQiLkXwL._AC_SL1500_.jpg",
-      "alt": "Lepro LED Desk Lamp adjustable arm"
+      "alt": "Lepro LED desk lamp adjustable arm and light bar angle",
+      "role": "product"
+    },
+    {
+      "url": "https://m.media-amazon.com/images/I/41Z1LgP3cGL._AC_SL1500_.jpg",
+      "alt": "Lepro LED desk lamp side profile showing slim metal base",
+      "role": "product"
+    },
+    {
+      "url": "https://m.media-amazon.com/images/I/41kNDTpo7hL._AC_SL1500_.jpg",
+      "alt": "Lepro LED desk lamp touch control panel on base",
+      "role": "detail"
+    },
+    {
+      "url": "https://m.media-amazon.com/images/I/41dZVepEQvL._AC_SL1500_.jpg",
+      "alt": "Lepro LED desk lamp 5 color modes and 5 brightness levels",
+      "role": "detail"
+    },
+    {
+      "url": "https://m.media-amazon.com/images/I/11nlFJRPUHL._AC_SL1500_.jpg",
+      "alt": "Lepro LED desk lamp eye-care diffused frosted shade close-up",
+      "role": "detail"
     }
   ]
 }

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { ProductImage } from "@/components/reviews/product-image";
 import type { EditorialImage } from "@/lib/reviews/editorial-images";
 
 interface ReviewHeroGalleryProps {
@@ -68,14 +69,14 @@ export function ReviewHeroGallery({
             className="review-hero-gallery-item min-w-[82%] shrink-0 snap-start overflow-hidden rounded-2xl border bg-card sm:min-w-0"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <ProductImage
               src={image.url}
               alt={image.alt}
+              variant="product"
               width={1200}
-              height={750}
+              height={1200}
               fetchPriority={index === 0 ? "high" : undefined}
               loading={index === 0 ? "eager" : "lazy"}
-              className="aspect-[16/10] w-full object-cover"
             />
             {image.caption ? (
               <figcaption className="px-3 py-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">

@@ -8,7 +8,7 @@ const DESK_LAMP_IMAGES: EditorialImage[] = [
   {
     url: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80",
     alt: "Modern LED desk lamp on a home office desk",
-    caption: "The LumenArc lamp in a typical standing-desk setup.",
+    caption: "Task lighting in a typical home office setup.",
   },
   {
     url: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1200&q=80",

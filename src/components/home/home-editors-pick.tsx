@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Star } from "lucide-react";
 
+import { ProductImage } from "@/components/reviews/product-image";
 import { Button } from "@/components/ui/button";
 import { formatReviewDate } from "@/lib/reviews/markdown-utils";
 
@@ -43,14 +44,15 @@ export function HomeEditorsPick({
       className="home-editors-pick overflow-hidden rounded-2xl border bg-card shadow-sm"
     >
       <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <div className="relative min-h-[220px] bg-muted/30 sm:min-h-[280px] lg:min-h-[360px]">
+        <div className="relative flex min-h-[220px] items-center justify-center bg-[#f5f5f5] p-6 sm:min-h-[280px] sm:p-8 lg:min-h-[360px] lg:p-10">
           {product.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <ProductImage
               src={product.imageUrl}
               alt={product.title}
-              className="absolute inset-0 size-full object-cover"
+              variant="product"
+              className="max-h-[320px] w-full max-w-md lg:max-h-[420px]"
               fetchPriority="high"
+              loading="eager"
             />
           ) : (
             <div className="flex size-full items-center justify-center text-sm text-muted-foreground">

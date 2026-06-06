@@ -1,4 +1,4 @@
-import { getSectionEditorialImages } from "@/lib/reviews/review-images";
+import { getSectionProductImages } from "@/lib/reviews/review-images";
 import { enrichReviewContent } from "@/lib/reviews/enrich-review-content";
 import {
   contentHasHtmlHeadings,
@@ -25,27 +25,35 @@ export interface PublishReadinessResult {
   enrichedContent: string;
   heroImageCount: number;
   bodyImageCount: number;
+  bodyProductImageCount: number;
   markdownHeadingCount: number;
   checklist: {
     noHtmlHeadings: boolean;
     hasMarkdownHeadings: boolean;
     bodyImagesValid: boolean;
     minBodyImages: boolean;
+    minProductBodyImages: boolean;
     productHeroImage: boolean;
     minHeroImages: boolean;
+    heroImagesAllAmazon: boolean;
   };
 }
 
 export function evaluatePublishReadiness(
   input: PublishReadinessInput,
 ): PublishReadinessResult {
-  const sectionImages = getSectionEditorialImages({
-    externalId: input.product.externalId,
-    title: input.product.title,
+  const sectionImages = getSectionProductImages({
+    productTitle: input.product.title,
+    productImageUrl: input.product.imageUrl,
+    mediaAssets: input.mediaAssets,
   });
 
   const enrichedContent = enrichReviewContent(input.content, sectionImages);
   const bodyImageUrls = extractMarkdownImageUrls(enrichedContent);
+  const bodyProductImageCount = bodyImageUrls.filter((url) =>
+    isAmazonProductImageUrl(url),
+  ).length;
+
   const heroImages = resolveHeroGalleryImages({
     productTitle: input.product.title,
     externalId: input.product.externalId,
@@ -65,20 +73,28 @@ export function evaluatePublishReadiness(
     (isAmazonProductImageUrl(input.product.imageUrl ?? "") ||
       isAllowedImageUrl(input.product.imageUrl ?? ""));
 
+  const heroImagesAllAmazon =
+    heroImages.length === 0 ||
+    heroImages.every((image) => isAmazonProductImageUrl(image.url));
+
   const checklist = {
     noHtmlHeadings: !contentHasHtmlHeadings(input.content),
     hasMarkdownHeadings:
       markdownHeadingCount >= QUALITY_THRESHOLDS.minMarkdownHeadings,
     bodyImagesValid,
     minBodyImages: bodyImageUrls.length >= QUALITY_THRESHOLDS.minBodyImages,
+    minProductBodyImages:
+      bodyProductImageCount >= QUALITY_THRESHOLDS.minProductBodyImages,
     productHeroImage: hasProductImage,
     minHeroImages: heroImages.length >= QUALITY_THRESHOLDS.minHeroImages,
+    heroImagesAllAmazon,
   };
 
   return {
     enrichedContent,
     heroImageCount: heroImages.length,
     bodyImageCount: bodyImageUrls.length,
+    bodyProductImageCount,
     markdownHeadingCount,
     checklist,
   };

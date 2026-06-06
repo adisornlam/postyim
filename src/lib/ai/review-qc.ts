@@ -80,6 +80,11 @@ function buildFailures(
       `Review needs at least ${QUALITY_THRESHOLDS.minBodyImages} inline images after enrichment.`,
     );
   }
+  if (!checklist.minProductBodyImages) {
+    failures.push(
+      `Review needs at least ${QUALITY_THRESHOLDS.minProductBodyImages} inline Amazon product images.`,
+    );
+  }
   if (!checklist.productHeroImage) {
     failures.push("Product hero image is missing or uses an invalid URL.");
   }
@@ -87,6 +92,9 @@ function buildFailures(
     failures.push(
       `Hero gallery needs at least ${QUALITY_THRESHOLDS.minHeroImages} images.`,
     );
+  }
+  if (!checklist.heroImagesAllAmazon) {
+    failures.push("Hero gallery must use Amazon product photos only.");
   }
 
   return failures;

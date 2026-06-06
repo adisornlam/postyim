@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+import { ProductImage } from "@/components/reviews/product-image";
+
 import { ReviewJsonLd } from "@/components/seo/review-json-ld";
 import { SiteFooter, SiteHeader } from "@/components/site/site-chrome";
 import { ReviewAtAGlanceBar } from "@/components/reviews/review-at-a-glance-bar";
@@ -15,7 +17,7 @@ import { ReviewTableOfContents } from "@/components/reviews/review-table-of-cont
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_DISCLOSURE, AFFILIATE_DISCLOSURE_MARKERS } from "@/lib/ai/constants";
 import {
-  getSectionEditorialImages,
+  getSectionProductImages,
   resolveHeroGalleryImages,
 } from "@/lib/reviews/review-images";
 import { enrichReviewContent } from "@/lib/reviews/enrich-review-content";
@@ -112,9 +114,10 @@ export function GadgetReviewTemplate({
       : `$${product.price} ${product.currency}`;
 
   const heroImages = resolveReviewImages(product, mediaAssets);
-  const sectionImages = getSectionEditorialImages({
-    externalId: product.externalId,
-    title: product.title,
+  const sectionImages = getSectionProductImages({
+    productTitle: product.title,
+    productImageUrl: product.imageUrl,
+    mediaAssets,
   });
   const enrichedContent = enrichReviewContent(review.content, sectionImages);
   const headings = extractMarkdownHeadings(enrichedContent);
@@ -239,11 +242,10 @@ export function GadgetReviewTemplate({
                       className="group review-related-card overflow-hidden rounded-2xl border bg-card transition-all hover:-translate-y-0.5 hover:shadow-md"
                     >
                       {relatedProduct.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <ProductImage
                           src={relatedProduct.imageUrl}
-                          alt=""
-                          className="aspect-[16/10] w-full object-cover"
+                          alt={relatedProduct.title}
+                          variant="product"
                           loading="lazy"
                         />
                       ) : null}

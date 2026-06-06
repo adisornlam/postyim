@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 
+import { ProductImage } from "@/components/reviews/product-image";
+
 interface HomeReviewCardProps {
   review: {
     title: string;
@@ -32,13 +34,13 @@ export function HomeReviewCard({
       href={`/reviews/${review.slug}`}
       className="home-review-card group flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-muted/30">
+      <div className="relative flex aspect-square items-center justify-center overflow-hidden bg-[#f5f5f5]">
         {product.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <ProductImage
             src={product.imageUrl}
-            alt=""
-            className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            alt={product.title}
+            variant="product"
+            className="size-full p-4 transition-transform duration-300 group-hover:scale-[1.03]"
             loading="lazy"
           />
         ) : (

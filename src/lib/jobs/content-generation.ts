@@ -16,7 +16,7 @@ import { ensureDisclosure, evaluateReviewQuality } from "@/lib/ai/quality-gate";
 import { normalizeReviewTitle } from "@/lib/ai/constants";
 import { getSiteName, getSiteUrl } from "@/lib/env";
 import { enrichReviewContent } from "@/lib/reviews/enrich-review-content";
-import { getSectionEditorialImages } from "@/lib/reviews/review-images";
+import { getSectionProductImages } from "@/lib/reviews/review-images";
 import { evaluatePublishReadiness } from "@/lib/reviews/publish-readiness";
 import { extractProductResearch } from "@/lib/products/research-types";
 import { resolveTargetKeyword as resolveProductKeyword } from "@/lib/seo/resolve-target-keyword";
@@ -211,6 +211,16 @@ export async function generateReviewForProduct(
 
   const factSheet = extractProductResearch(product.rawData) ?? undefined;
 
+  const productMedia = await db
+    .select({
+      url: mediaAssets.url,
+      altText: mediaAssets.altText,
+      sortOrder: mediaAssets.sortOrder,
+    })
+    .from(mediaAssets)
+    .where(eq(mediaAssets.productId, product.id))
+    .orderBy(mediaAssets.sortOrder);
+
   const generation = await generateProductReview({
     product: {
       id: product.id,
@@ -234,9 +244,11 @@ export async function generateReviewForProduct(
     factSheet,
   });
 
-  const sectionImages = getSectionEditorialImages({
-    externalId: product.externalId,
-    title: product.title,
+  const sectionImages = getSectionProductImages({
+    productTitle: product.title,
+    productImageUrl: product.imageUrl,
+    mediaAssets: productMedia,
+    researchImages: factSheet?.productImages,
   });
 
   const reviewContent = {
@@ -254,12 +266,6 @@ export async function generateReviewForProduct(
     productTitle: product.title,
     externalId: product.externalId,
   });
-
-  const productMedia = await db
-    .select({ url: mediaAssets.url, altText: mediaAssets.altText, sortOrder: mediaAssets.sortOrder })
-    .from(mediaAssets)
-    .where(eq(mediaAssets.productId, product.id))
-    .orderBy(mediaAssets.sortOrder);
 
   const publishReadiness = evaluatePublishReadiness({
     content: reviewContent.content,
