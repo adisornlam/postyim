@@ -11,9 +11,11 @@ import {
   DISCOVERY_JOB_KIND,
   getDiscoveryJobLogs,
   reportDiscoveryProgress,
+} from "@/lib/ai/discovery-progress-server";
+import {
   resolveDiscoveryProgress,
   type DiscoveryProgressSnapshot,
-} from "@/lib/ai/discovery-progress";
+} from "@/lib/ai/discovery-progress-types";
 import { getSiteUrl } from "@/lib/env";
 import {
   finishJobRun,
@@ -22,7 +24,7 @@ import {
 } from "@/lib/jobs/logger";
 import { getCronSecret } from "@/lib/settings/runtime-config";
 
-export { DISCOVERY_JOB_KIND } from "@/lib/ai/discovery-progress";
+export { DISCOVERY_JOB_KIND } from "@/lib/ai/discovery-progress-server";
 
 export type DiscoveryJobDetails = {
   kind: typeof DISCOVERY_JOB_KIND;

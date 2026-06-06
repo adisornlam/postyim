@@ -15,7 +15,7 @@ import {
   type DiscoveryLogEntry,
   type DiscoveryPhase,
   type DiscoveryProgressSnapshot,
-} from "@/lib/ai/discovery-progress";
+} from "@/lib/ai/discovery-progress-types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

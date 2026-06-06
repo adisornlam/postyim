@@ -21,7 +21,7 @@ import {
   type ProductDiscoveryGeminiPayload,
 } from "@/lib/ai/prompts/discover-products";
 import { parseAmazonCampaignConfig, parseCampaignKeywords } from "@/lib/affiliate/types";
-import { reportDiscoveryProgress } from "@/lib/ai/discovery-progress";
+import { reportDiscoveryProgress } from "@/lib/ai/discovery-progress-server";
 import {
   getGeminiModelDraft,
   shouldUseGeminiMock,

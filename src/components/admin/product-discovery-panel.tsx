@@ -8,7 +8,7 @@ import type { DiscoveryCandidate } from "@/lib/ai/discovery-types";
 import type {
   DiscoveryLogEntry,
   DiscoveryProgressSnapshot,
-} from "@/lib/ai/discovery-progress";
+} from "@/lib/ai/discovery-progress-types";
 import {
   DiscoveryConfirmDialog,
   DiscoveryProgressDialog,
