@@ -1,20 +1,17 @@
-import { ZodError } from "zod";
-
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { campaigns, categories, products } from "@/db/schema";
+import { parseProductDiscoveryResult } from "@/lib/ai/discovery-normalize";
+import {
+  normalizeAsin,
+  type DiscoveryCandidate,
+  type ProductDiscoveryResult,
+} from "@/lib/ai/discovery-types";
 import {
   generateDiscoveryJson,
   getReviewGenerationModel,
 } from "@/lib/ai/gemini/client";
-import {
-  discoveryCandidateSchema,
-  normalizeAsin,
-  productDiscoveryResultSchema,
-  type DiscoveryCandidate,
-  type ProductDiscoveryResult,
-} from "@/lib/ai/discovery-types";
 import { generateMockProductDiscovery } from "@/lib/ai/mock/discover-products";
 import {
   buildProductDiscoveryPrompt,
@@ -60,17 +57,6 @@ function dedupeCandidates(candidates: DiscoveryCandidate[]): DiscoveryCandidate[
   }
 
   return output.sort((a, b) => b.overallScore - a.overallScore);
-}
-
-function formatDiscoveryValidationError(error: ZodError): string {
-  const details = error.issues
-    .map((issue) => {
-      const field = issue.path.length > 0 ? issue.path.join(".") : "response";
-      return `${field}: ${issue.message}`;
-    })
-    .join("; ");
-
-  return `Discovery result validation failed (${details})`;
 }
 
 export async function discoverProductsForCampaign(
@@ -182,27 +168,9 @@ export async function discoverProductsForCampaign(
     },
   });
 
-  let parsed;
-
-  try {
-    parsed = productDiscoveryResultSchema.parse({
-      ...response.data,
-      candidates: response.data.candidates.map((candidate) =>
-        discoveryCandidateSchema.parse({
-          ...candidate,
-          asin: normalizeAsin(candidate.asin),
-          currency: candidate.currency?.toUpperCase() ?? "USD",
-          risks: candidate.risks ?? [],
-        }),
-      ),
-    });
-  } catch (error) {
-    if (error instanceof ZodError) {
-      throw new Error(formatDiscoveryValidationError(error));
-    }
-
-    throw error;
-  }
+  const parsed = parseProductDiscoveryResult(response.data, {
+    fallbackQueries: keywords,
+  });
 
   const filtered = parsed.candidates.filter(
     (c) => !excludeAsins.includes(normalizeAsin(c.asin)),

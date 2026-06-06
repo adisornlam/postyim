@@ -15,6 +15,7 @@ export const productDiscoveryJsonSchema: Record<string, unknown> = {
     },
     candidates: {
       type: "array",
+      maxItems: 10,
       items: {
         type: "object",
         properties: {
@@ -37,10 +38,12 @@ export const productDiscoveryJsonSchema: Record<string, unknown> = {
           demandSignals: {
             type: "array",
             items: { type: "string" },
+            maxItems: 6,
           },
           risks: {
             type: "array",
             items: { type: "string" },
+            maxItems: 4,
           },
         },
         required: [
@@ -131,14 +134,20 @@ export function buildProductDiscoveryStructurePrompt(input: {
 
 Rules:
 - Output ONLY valid JSON matching the required schema (no markdown).
-- Include exactly up to ${input.limit} candidates, sorted by overallScore descending.
+- Include up to ${input.limit} candidates, sorted by overallScore descending.
 - Use only ASINs mentioned in the research notes. Never invent ASINs.
 - Normalize ASINs to uppercase 10-character Amazon IDs starting with B.
-- If a field is missing from research, omit optional fields rather than guessing.
-- currency must be "USD" when price is present.
-- estimatedCommissionRate is a decimal (e.g. 0.045 for 4.5%).
-- risks may be an empty array.
-- searchedQueries must list at most 6 unique Google queries actually used (not every keyword variant).`;
+- Omit optional fields when unknown — do not guess prices, ratings, or URLs.
+- Hard limits (extra items or out-of-range values will be discarded):
+  - summary: 10–2000 chars
+  - searchedQueries: 1–6 unique strings
+  - candidates: 1–${input.limit}
+  - title: 3–500 chars; targetKeyword: 2–300 chars; rationale: 20–2000 chars
+  - demandSignals: 1–6 strings per candidate; risks: 0–4 strings
+  - scores (demandScore, reviewFitScore, overallScore): integers 0–100
+  - estimatedCommissionRate: decimal 0–1 (e.g. 0.045 for 4.5%, NOT 4.5)
+  - rating: 0–5; reviewCount: non-negative integer
+  - currency: 3-letter code (USD when price is present)`;
 }
 
 export type ProductDiscoveryGeminiPayload = ProductDiscoveryResult;

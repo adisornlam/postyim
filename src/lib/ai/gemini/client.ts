@@ -223,8 +223,16 @@ export async function generateJson<T>(input: {
     throw new Error(describeEmptyGeminiResponse(response));
   }
 
+  let data: T;
+
+  try {
+    data = JSON.parse(text) as T;
+  } catch {
+    throw new Error("Gemini returned invalid JSON during discovery structure step");
+  }
+
   return {
-    data: JSON.parse(text) as T,
+    data,
     text,
     usage: {
       promptTokens: response.usageMetadata?.promptTokenCount,
