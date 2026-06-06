@@ -233,7 +233,7 @@ export function DiscoveryProgressDialog({
               </DialogTitle>
               <DialogDescription>
                 {campaignName}
-                {startedAt ? ` · ${formatElapsed(elapsedMs || Date.now() - startedAt)} elapsed` : ""}
+                {startedAt !== null ? ` · ${formatElapsed(elapsedMs)} elapsed` : ""}
               </DialogDescription>
             </div>
           </DialogHeader>

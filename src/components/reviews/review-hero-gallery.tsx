@@ -68,7 +68,6 @@ export function ReviewHeroGallery({
             key={`${image.url}-${index}`}
             className="review-hero-gallery-item min-w-[82%] shrink-0 snap-start overflow-hidden rounded-2xl border bg-card sm:min-w-0"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <ProductImage
               src={image.url}
               alt={image.alt}

@@ -65,7 +65,11 @@ export function AmazonIntegrationForm({
       setAccessKey("");
       setSecretKey("");
       setSuccess("Amazon marketplace settings saved.");
-      onSaved?.() ?? router.refresh();
+      if (onSaved) {
+        onSaved();
+      } else {
+        router.refresh();
+      }
     } catch (saveError) {
       setError(
         saveError instanceof Error

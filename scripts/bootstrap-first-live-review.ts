@@ -3,10 +3,6 @@ import { config } from "dotenv";
 config({ path: ".env.local" });
 config();
 
-import { eq } from "drizzle-orm";
-
-import { db } from "@/db";
-import { reviews } from "@/db/schema";
 import { evaluateReviewById } from "@/lib/ai/review-qc";
 import { generateReviewForProduct } from "@/lib/jobs/content-generation";
 import { createManualAmazonProduct } from "@/lib/products/manual-create";

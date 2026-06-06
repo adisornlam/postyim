@@ -7,7 +7,6 @@ import { eq } from "drizzle-orm";
 
 import { generateMockReview } from "@/lib/ai/mock/generate-review";
 import { ensureDisclosure } from "@/lib/ai/quality-gate";
-import { evaluateReviewQuality } from "@/lib/ai/quality-gate";
 import { resolveTargetKeyword } from "@/lib/seo/resolve-target-keyword";
 import { getEditorialImagesForProduct } from "@/lib/reviews/editorial-images";
 import { db } from "@/db";

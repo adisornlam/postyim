@@ -6,7 +6,6 @@ import { useState } from "react";
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import { Menu } from "@base-ui/react/menu";
 
-import { Button } from "@/components/ui/button";
 import type { AdminSession } from "@/lib/auth/session";
 import { cn } from "@/lib/utils";
 

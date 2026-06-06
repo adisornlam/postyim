@@ -1,5 +1,4 @@
 import {
-  getAmazonCredentials,
   getAmazonPartnerTag,
   getCronSecret,
   getGeminiApiKey,

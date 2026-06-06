@@ -55,7 +55,11 @@ export function GeminiIntegrationForm({
 
       setApiKey("");
       setSuccess("Gemini settings saved.");
-      onSaved?.() ?? router.refresh();
+      if (onSaved) {
+        onSaved();
+      } else {
+        router.refresh();
+      }
     } catch (saveError) {
       setError(
         saveError instanceof Error

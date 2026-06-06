@@ -7,7 +7,6 @@ import {
   categories,
   contentQualityScores,
   keywords,
-  mediaAssets,
   products,
   reviews,
 } from "@/db/schema";
