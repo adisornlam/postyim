@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { getCronSecret } from "@/lib/env";
+import { getCronSecret } from "@/lib/settings/runtime-config";
 
-export function verifyJobAuth(request: Request): boolean {
-  const secret = getCronSecret();
+export async function verifyJobAuth(request: Request): Promise<boolean> {
+  const secret = await getCronSecret();
 
   if (!secret) {
     return process.env.NODE_ENV === "development";

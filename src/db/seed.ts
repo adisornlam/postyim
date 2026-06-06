@@ -5,6 +5,7 @@ config();
 
 import { eq } from "drizzle-orm";
 
+import { ensureSuperAdminUser } from "@/lib/auth/admin-users";
 import { authors, campaigns, categories } from "@/db/schema";
 
 import { db } from "./index";
@@ -95,8 +96,24 @@ async function seed() {
     .where(eq(campaigns.slug, "home-office-essentials"))
     .limit(1);
 
+  const adminEmail =
+    process.env.ADMIN_EMAIL?.trim().toLowerCase() ?? "admin@postyim.com";
+  const adminPassword =
+    process.env.ADMIN_PASSWORD?.trim() ?? "PostyimAdmin2026!";
+
+  await ensureSuperAdminUser({
+    email: adminEmail,
+    password: adminPassword,
+    name: "Super Admin",
+  });
+
   console.log("Seed complete.");
   console.log("Campaign:", seededCampaign[0]);
+  console.log("Superadmin:", adminEmail);
+  if (!process.env.ADMIN_PASSWORD) {
+    console.log("Superadmin temporary password:", adminPassword);
+    console.log("Change it at /admin/account after signing in.");
+  }
   process.exit(0);
 }
 

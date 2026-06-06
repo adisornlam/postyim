@@ -66,6 +66,6 @@ export class AmazonAdapter implements AffiliateAdapter {
   }
 }
 
-export function createAmazonAdapter(): AmazonAdapter {
-  return new AmazonAdapter(createAmazonPaapiClient());
+export async function createAmazonAdapter(): Promise<AmazonAdapter> {
+  return new AmazonAdapter(await createAmazonPaapiClient());
 }

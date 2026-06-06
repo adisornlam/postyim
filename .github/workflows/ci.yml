@@ -27,6 +27,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postyim
       AUTH_SECRET: ci-test-secret
+      ADMIN_EMAIL: admin@postyim.com
       ADMIN_PASSWORD: ci-test-password
       AMAZON_MOCK: "true"
       GEMINI_MOCK: "true"
@@ -53,6 +54,9 @@ jobs:
 
       - name: Migrate database
         run: pnpm db:migrate
+
+      - name: Seed database
+        run: pnpm db:seed
 
       - name: Build
         run: pnpm build

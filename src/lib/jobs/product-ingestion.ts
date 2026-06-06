@@ -51,8 +51,8 @@ export async function ingestCampaignProducts(
   }
 
   const config = parseAmazonCampaignConfig(campaign.config);
-  const adapter = getAffiliateAdapter(campaign.affiliateNetwork);
-  const mode = getAdapterMode(campaign.affiliateNetwork);
+  const adapter = await getAffiliateAdapter(campaign.affiliateNetwork);
+  const mode = await getAdapterMode(campaign.affiliateNetwork);
   const jobRun = await startJobRun({
     jobType: "product_ingestion",
     campaignId: campaign.id,

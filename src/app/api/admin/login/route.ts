@@ -1,22 +1,49 @@
 import { NextResponse } from "next/server";
 
+import { authenticateAdmin } from "@/lib/auth/admin-users";
 import {
   createSessionToken,
   getSessionClearCookieConfig,
   getSessionCookieConfig,
-  verifyAdminPassword,
 } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { password?: string };
+  const body = (await request.json()) as {
+    email?: string;
+    password?: string;
+  };
+
+  const email = body.email?.trim().toLowerCase() ?? "";
   const password = body.password ?? "";
 
-  if (!verifyAdminPassword(password)) {
-    return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+  if (!email || !password) {
+    return NextResponse.json(
+      { error: "Email and password are required" },
+      { status: 400 },
+    );
   }
 
-  const token = createSessionToken();
-  const response = NextResponse.json({ status: "ok" });
+  const user = await authenticateAdmin({ email, password });
+
+  if (!user) {
+    return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+  }
+
+  const token = createSessionToken({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+  });
+
+  const response = NextResponse.json({
+    status: "ok",
+    user: {
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    },
+  });
   response.cookies.set(getSessionCookieConfig(token));
 
   return response;

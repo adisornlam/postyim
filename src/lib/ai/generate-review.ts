@@ -16,7 +16,7 @@ export async function generateReviewWithGemini(
 ): Promise<ReviewGenerationResult> {
   const templateId = input.templateId || pickReviewTemplate().id;
   const prompt = buildReviewPrompt({ ...input, templateId });
-  const model = getReviewGenerationModel();
+  const model = await getReviewGenerationModel();
 
   const response = await generateJson<GeneratedReview>({
     model,

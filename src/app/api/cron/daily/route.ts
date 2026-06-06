@@ -8,7 +8,7 @@ import { refreshProductPrices } from "@/lib/jobs/price-refresh";
 export const maxDuration = 300;
 
 export async function GET(request: Request) {
-  if (!verifyJobAuth(request)) {
+  if (!(await verifyJobAuth(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

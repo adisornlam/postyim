@@ -11,7 +11,7 @@ import {
 import { generateReviewsForQueue } from "@/lib/jobs/content-generation";
 
 export async function POST(request: Request) {
-  if (!verifyJobAuth(request)) {
+  if (!(await verifyJobAuth(request))) {
     return unauthorizedJobResponse();
   }
 

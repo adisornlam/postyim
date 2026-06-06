@@ -11,4 +11,6 @@ export * from "./media-assets";
 export * from "./affiliate-clicks";
 export * from "./job-runs";
 export * from "./cron-logs";
+export * from "./admin-users";
+export * from "./app-settings";
 export * from "./relations";

@@ -5,7 +5,7 @@ import type {
   ReviewGenerationInput,
   ReviewGenerationResult,
 } from "@/lib/ai/types";
-import { shouldUseGeminiMock } from "@/lib/env";
+import { shouldUseGeminiMock } from "@/lib/settings/runtime-config";
 
 export async function generateProductReview(
   input: ReviewGenerationInput,
@@ -13,7 +13,7 @@ export async function generateProductReview(
   const templateId = input.templateId || pickReviewTemplate().id;
   const payload = { ...input, templateId };
 
-  if (shouldUseGeminiMock()) {
+  if (await shouldUseGeminiMock()) {
     return generateMockReview(payload);
   }
 

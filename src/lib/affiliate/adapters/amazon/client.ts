@@ -1,10 +1,10 @@
 import { AwsClient } from "aws4fetch";
 
 import {
-  getAmazonCredentials,
   getAmazonMarketplace,
   type AmazonCredentials,
 } from "@/lib/env";
+import { getAmazonCredentials } from "@/lib/settings/runtime-config";
 
 import type {
   AmazonGetItemsResponse,
@@ -141,12 +141,12 @@ export class AmazonPaapiClient {
   }
 }
 
-export function createAmazonPaapiClient(): AmazonPaapiClient {
-  const credentials = getAmazonCredentials();
+export async function createAmazonPaapiClient(): Promise<AmazonPaapiClient> {
+  const credentials = await getAmazonCredentials();
 
   if (!credentials) {
     throw new Error(
-      "Amazon PA-API credentials are not configured. Set AMAZON_ACCESS_KEY, AMAZON_SECRET_KEY, and AMAZON_PARTNER_TAG.",
+      "Amazon PA-API credentials are not configured. Connect them in Admin → Settings → Integrations.",
     );
   }
 

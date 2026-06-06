@@ -7,7 +7,7 @@ import {
 import { refreshProductPrices } from "@/lib/jobs/price-refresh";
 
 export async function POST(request: Request) {
-  if (!verifyJobAuth(request)) {
+  if (!(await verifyJobAuth(request))) {
     return unauthorizedJobResponse();
   }
 

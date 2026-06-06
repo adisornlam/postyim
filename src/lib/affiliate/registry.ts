@@ -3,14 +3,14 @@ import type { AffiliateAdapter } from "@/lib/affiliate/types";
 
 import { createAmazonAdapter } from "./adapters/amazon/adapter";
 import { createMockAmazonAdapter } from "./adapters/mock/adapter";
-import { shouldUseAmazonMock } from "@/lib/env";
+import { shouldUseAmazonMock } from "@/lib/settings/runtime-config";
 
-export function getAffiliateAdapter(
+export async function getAffiliateAdapter(
   network: AffiliateNetwork,
-): AffiliateAdapter {
+): Promise<AffiliateAdapter> {
   switch (network) {
     case "amazon":
-      if (shouldUseAmazonMock()) {
+      if (await shouldUseAmazonMock()) {
         return createMockAmazonAdapter();
       }
       return createAmazonAdapter();
@@ -23,8 +23,10 @@ export function getAffiliateAdapter(
   }
 }
 
-export function getAdapterMode(network: AffiliateNetwork): "live" | "mock" {
-  if (network === "amazon" && shouldUseAmazonMock()) {
+export async function getAdapterMode(
+  network: AffiliateNetwork,
+): Promise<"live" | "mock"> {
+  if (network === "amazon" && (await shouldUseAmazonMock())) {
     return "mock";
   }
 

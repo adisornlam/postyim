@@ -4,31 +4,38 @@ import {
   getGeminiApiKey,
   getGeminiModelDraft,
   getGeminiModelFinal,
-} from "@/lib/env";
+} from "@/lib/settings/runtime-config";
 
 let client: GoogleGenAI | null = null;
+let clientKey: string | null = null;
 
-export function getGeminiClient(): GoogleGenAI {
-  const apiKey = getGeminiApiKey();
+export function resetGeminiClient() {
+  client = null;
+  clientKey = null;
+}
+
+export async function getGeminiClient(): Promise<GoogleGenAI> {
+  const apiKey = await getGeminiApiKey();
 
   if (!apiKey) {
     throw new Error(
-      "GEMINI_API_KEY is not configured. Set it in .env.local or enable GEMINI_MOCK=true.",
+      "Gemini API key is not configured. Connect it in Admin → Settings → Integrations.",
     );
   }
 
-  if (!client) {
+  if (!client || clientKey !== apiKey) {
     client = new GoogleGenAI({ apiKey });
+    clientKey = apiKey;
   }
 
   return client;
 }
 
-export function getReviewGenerationModel(): string {
+export async function getReviewGenerationModel(): Promise<string> {
   return getGeminiModelFinal();
 }
 
-export function getQualityEvaluationModel(): string {
+export async function getQualityEvaluationModel(): Promise<string> {
   return getGeminiModelDraft();
 }
 
@@ -37,7 +44,7 @@ export async function generateJson<T>(input: {
   prompt: string;
   schema: Record<string, unknown>;
 }): Promise<{ data: T; text: string; usage?: { promptTokens?: number; outputTokens?: number } }> {
-  const ai = getGeminiClient();
+  const ai = await getGeminiClient();
 
   const response = await ai.models.generateContent({
     model: input.model,

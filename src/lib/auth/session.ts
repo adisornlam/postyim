@@ -4,6 +4,18 @@ import { cookies } from "next/headers";
 const SESSION_COOKIE = "postyim_admin_session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 
+export interface AdminSession {
+  userId: string;
+  email: string;
+  name: string;
+  role: "superadmin" | "admin";
+}
+
+interface SessionPayload extends AdminSession {
+  authenticated: true;
+  exp: number;
+}
+
 function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET?.trim();
 
@@ -22,26 +34,30 @@ function signPayload(payload: string): string {
   return createHmac("sha256", getAuthSecret()).update(payload).digest("base64url");
 }
 
-export function createSessionToken(): string {
+export function createSessionToken(user: AdminSession): string {
   const payload = Buffer.from(
     JSON.stringify({
       authenticated: true,
+      userId: user.userId,
+      email: user.email,
+      name: user.name,
+      role: user.role,
       exp: Date.now() + SESSION_MAX_AGE * 1000,
-    }),
+    } satisfies SessionPayload),
   ).toString("base64url");
 
   return `${payload}.${signPayload(payload)}`;
 }
 
-export function verifySessionToken(token: string | undefined): boolean {
+export function verifySessionToken(token: string | undefined): AdminSession | null {
   if (!token) {
-    return false;
+    return null;
   }
 
   const [payload, signature] = token.split(".");
 
   if (!payload || !signature) {
-    return false;
+    return null;
   }
 
   const expected = signPayload(payload);
@@ -53,24 +69,41 @@ export function verifySessionToken(token: string | undefined): boolean {
     );
 
     if (!validSignature) {
-      return false;
+      return null;
     }
   } catch {
-    return false;
+    return null;
   }
 
   try {
     const data = JSON.parse(
       Buffer.from(payload, "base64url").toString("utf8"),
-    ) as { authenticated?: boolean; exp?: number };
+    ) as Partial<SessionPayload>;
 
-    return Boolean(data.authenticated && data.exp && data.exp > Date.now());
+    if (
+      !data.authenticated ||
+      !data.userId ||
+      !data.email ||
+      !data.name ||
+      !data.role ||
+      !data.exp ||
+      data.exp <= Date.now()
+    ) {
+      return null;
+    }
+
+    return {
+      userId: data.userId,
+      email: data.email,
+      name: data.name,
+      role: data.role,
+    };
   } catch {
-    return false;
+    return null;
   }
 }
 
-export async function getAdminSession(): Promise<boolean> {
+export async function getAdminSession(): Promise<AdminSession | null> {
   const cookieStore = await cookies();
   return verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
 }
@@ -101,18 +134,4 @@ export function getSessionClearCookieConfig() {
 
 export function getSessionCookieName() {
   return SESSION_COOKIE;
-}
-
-export function verifyAdminPassword(password: string): boolean {
-  const configured = process.env.ADMIN_PASSWORD?.trim();
-
-  if (!configured) {
-    if (process.env.NODE_ENV === "development") {
-      return password === "postyim-dev";
-    }
-
-    return false;
-  }
-
-  return password === configured;
 }

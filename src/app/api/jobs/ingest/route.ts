@@ -14,7 +14,7 @@ import {
 } from "@/lib/jobs/product-ingestion";
 
 export async function POST(request: Request) {
-  if (!verifyJobAuth(request)) {
+  if (!(await verifyJobAuth(request))) {
     return unauthorizedJobResponse();
   }
 

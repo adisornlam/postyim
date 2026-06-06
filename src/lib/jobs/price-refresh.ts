@@ -60,7 +60,7 @@ export async function refreshProductPrices(input?: {
     }
 
     for (const [network, networkProducts] of grouped) {
-      const adapter = getAffiliateAdapter(network as AffiliateNetwork);
+      const adapter = await getAffiliateAdapter(network as AffiliateNetwork);
 
       for (let index = 0; index < networkProducts.length; index += 10) {
         const batch = networkProducts.slice(index, index + 10);

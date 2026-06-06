@@ -10,9 +10,9 @@ import {
 } from "@/lib/reviews/actions";
 
 async function requireAdmin() {
-  const authenticated = await getAdminSession();
+  const session = await getAdminSession();
 
-  if (!authenticated) {
+  if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

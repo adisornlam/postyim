@@ -154,13 +154,23 @@ Quality gate checks: word count ≥ 1,500, uniqueness, spec accuracy, SEO meta, 
 
 ## Admin & Public Site (Step 5)
 
-### Admin (password-protected)
+### Admin (email + password)
 
-Default dev login: `postyim-dev` (or set `ADMIN_PASSWORD` in `.env.local`)
+Run `pnpm db:seed` once to create the superadmin account. Default credentials:
+
+- **Email:** `admin@postyim.com` (override with `ADMIN_EMAIL`)
+- **Password:** value of `ADMIN_PASSWORD` in `.env.local`, or `PostyimAdmin2026!` if unset
+
+Change your password after first sign-in at `/admin/account`.
+
+Integration credentials (Amazon, Gemini, cron secret) are stored encrypted in the database via **Settings → Integrations / System**. Only superadmin can update them. Set `SETTINGS_ENCRYPTION_KEY` once at deploy (`openssl rand -base64 32`).
 
 | Route | Description |
 |-------|-------------|
 | `/admin/login` | Admin sign-in |
+| `/admin/account` | Profile and change password |
+| `/admin/settings/integrations` | Marketplace & AI integrations |
+| `/admin/settings/system` | Database, security, cron, site config |
 | `/admin` | Dashboard overview |
 | `/admin/reviews` | Review queue (approve / reject / publish) |
 | `/admin/products` | Synced product catalog |

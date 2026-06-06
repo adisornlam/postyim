@@ -35,7 +35,8 @@ Set these in the Vercel project settings:
 | `GEMINI_API_KEY` | Google AI API key |
 | `GEMINI_MOCK` | `false` |
 | `CRON_SECRET` | Random 32+ char secret |
-| `ADMIN_PASSWORD` | Strong admin password |
+| `ADMIN_EMAIL` | Initial superadmin email (seed only) |
+| `ADMIN_PASSWORD` | Initial superadmin password (seed only) |
 | `AUTH_SECRET` | Random 32+ char secret |
 | `NEXT_PUBLIC_SITE_URL` | `https://postyim.com` |
 | `NEXT_PUBLIC_SITE_NAME` | `Postyim` |
@@ -116,7 +117,8 @@ Use the admin dashboard **Production readiness** panel or `/api/health` to confi
 - [ ] Amazon PA-API live (not mock)
 - [ ] Gemini live (not mock)
 - [ ] CRON_SECRET set
-- [ ] ADMIN_PASSWORD and AUTH_SECRET set
+- [ ] AUTH_SECRET set
+- [ ] Superadmin created (`pnpm db:seed` or manual insert)
 - [ ] NEXT_PUBLIC_SITE_URL uses HTTPS
 - [ ] At least 1 active campaign with keywords
 - [ ] ≥20 published reviews (90-day target)
@@ -127,7 +129,7 @@ Use the admin dashboard **Production readiness** panel or `/api/health` to confi
 | Issue | Fix |
 |-------|-----|
 | Cron returns 401 | Set `CRON_SECRET` in Vercel env |
-| Admin login fails | Verify `ADMIN_PASSWORD` and `AUTH_SECRET` |
+| Admin login fails | Verify superadmin exists (`pnpm db:seed`), email/password, and `AUTH_SECRET` |
 | No products ingested | Check campaign status is `active` and keywords are set |
 | Mock content still generated | Set `GEMINI_MOCK=false` and add `GEMINI_API_KEY` |
 | Images broken | Ensure Amazon product images sync via ingestion; check `media_assets` table |
