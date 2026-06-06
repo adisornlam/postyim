@@ -1,4 +1,5 @@
 import { generateJson, getReviewGenerationModel } from "@/lib/ai/gemini/client";
+import { normalizeMetaDescription } from "@/lib/ai/constants";
 import {
   buildReviewPrompt,
   generatedReviewJsonSchema,
@@ -24,7 +25,10 @@ export async function generateReviewWithGemini(
     schema: generatedReviewJsonSchema,
   });
 
-  const review = generatedReviewSchema.parse(response.data);
+  const review = generatedReviewSchema.parse({
+    ...response.data,
+    metaDescription: normalizeMetaDescription(response.data.metaDescription),
+  });
 
   return {
     review,

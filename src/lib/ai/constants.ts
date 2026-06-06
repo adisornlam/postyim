@@ -31,6 +31,20 @@ export const QUALITY_THRESHOLDS = {
   metaDescriptionMax: 160,
 } as const;
 
+export function normalizeMetaDescription(value: string): string {
+  let base = value.trim();
+
+  if (base.length < QUALITY_THRESHOLDS.metaDescriptionMin) {
+    base = `${base} Honest buyer guide with pros, cons, and recommendations.`.trim();
+  }
+
+  if (base.length > QUALITY_THRESHOLDS.metaDescriptionMax) {
+    base = `${base.slice(0, 157).trimEnd()}...`;
+  }
+
+  return base;
+}
+
 export const REVIEW_STRUCTURE_TEMPLATES = [
   {
     id: "hands-on-first",

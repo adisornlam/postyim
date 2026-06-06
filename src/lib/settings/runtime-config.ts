@@ -131,7 +131,7 @@ export async function getGeminiModelFinal(): Promise<string> {
   return resolveString(
     SETTING_KEYS.gemini.modelFinal,
     "GEMINI_MODEL_FINAL",
-    "gemini-2.0-pro",
+    "gemini-2.5-flash",
   );
 }
 
