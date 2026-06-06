@@ -81,27 +81,123 @@ function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
   return union === 0 ? 0 : intersection / union;
 }
 
+const KEY_SPEC_FIELDS = [
+  "brand",
+  "wattage",
+  "brightness",
+  "model",
+  "dimensions",
+  "colorTemperatures",
+  "control",
+  "powerSource",
+  "material",
+  "bestSellerRank",
+  "memoryFunction",
+  "colorModes",
+  "brightnessLevels",
+] as const;
+
+const FACT_KEYWORD_PATTERNS = [
+  /\d+\.?\d*w\b/gi,
+  /\d+\s*(?:lm|lumens?)\b/gi,
+  /\d{4}k/gi,
+  /touch control/gi,
+  /memory function/gi,
+  /adjustable/gi,
+  /100-240v/gi,
+  /\b12v\b/gi,
+  /non-flickering/gi,
+  /eye[- ]care/gi,
+];
+
+function addSpecString(terms: Set<string>, value: string) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized.length <= 2) {
+    return;
+  }
+
+  terms.add(normalized);
+
+  for (const match of normalized.matchAll(/[\d.]+(?:\s*(?:w|lm|inch|k|v))?/g)) {
+    const token = match[0].trim();
+    if (token.length > 1) {
+      terms.add(token);
+    }
+  }
+}
+
 function extractSpecTerms(specs: Record<string, unknown>): string[] {
   const terms = new Set<string>();
 
-  const visit = (value: unknown) => {
-    if (typeof value === "string" && value.trim().length > 2) {
-      terms.add(value.trim().toLowerCase());
-      return;
+  for (const key of KEY_SPEC_FIELDS) {
+    const value = specs[key];
+
+    if (typeof value === "string") {
+      addSpecString(terms, value);
+      continue;
     }
 
-    if (Array.isArray(value)) {
-      value.forEach(visit);
-      return;
+    if (typeof value === "number" && Number.isFinite(value)) {
+      terms.add(String(value));
+      continue;
     }
 
-    if (value && typeof value === "object") {
-      Object.values(value).forEach(visit);
+    if (value === true && key === "memoryFunction") {
+      terms.add("memory");
     }
-  };
+  }
 
-  visit(specs);
-  return [...terms];
+  const verifiedFacts = specs.verifiedFacts;
+  if (Array.isArray(verifiedFacts)) {
+    for (const fact of verifiedFacts) {
+      if (typeof fact !== "string") {
+        continue;
+      }
+
+      for (const pattern of FACT_KEYWORD_PATTERNS) {
+        for (const match of fact.matchAll(pattern)) {
+          terms.add(match[0].toLowerCase());
+        }
+      }
+    }
+  }
+
+  return [...terms].filter((term) => term.length > 2);
+}
+
+function specTermMatchesContent(content: string, term: string): boolean {
+  const normalized = term.toLowerCase();
+
+  if (content.includes(normalized)) {
+    return true;
+  }
+
+  if (/^\d+\.?\d*w$/.test(normalized)) {
+    const num = normalized.replace("w", "");
+    return content.includes(num) && /\bw\b|watt/.test(content);
+  }
+
+  if (normalized.includes("lm")) {
+    const num = normalized.match(/[\d.]+/)?.[0];
+    return Boolean(num && content.includes(num) && /lumens?\b|\blm\b/.test(content));
+  }
+
+  if (/^\d{4}k$/.test(normalized)) {
+    return content.includes(normalized);
+  }
+
+  if (normalized.includes("-")) {
+    return normalized
+      .split("-")
+      .some((part) => part.length > 3 && content.includes(part));
+  }
+
+  if (/^[\d.]+/.test(normalized)) {
+    const num = normalized.match(/^[\d.]+/)?.[0];
+    return Boolean(num && content.includes(num));
+  }
+
+  return false;
 }
 
 function hasDisclosure(content: string): boolean {
@@ -171,10 +267,10 @@ export function evaluateReviewQuality(input: QualityGateInput): QualityGateResul
   }
 
   const uniqueness = 1 - maxSimilarity;
-  const specTerms = extractSpecTerms(input.productSpecs).slice(0, 8);
+  const specTerms = extractSpecTerms(input.productSpecs);
   const normalizedContent = input.review.content.toLowerCase();
   const matchedSpecs = specTerms.filter((term) =>
-    normalizedContent.includes(term.toLowerCase()),
+    specTermMatchesContent(normalizedContent, term),
   ).length;
 
   const keywordRelevance =
