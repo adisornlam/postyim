@@ -4,18 +4,22 @@ import {
 } from "@/lib/affiliate/amazon-commission-rates";
 import type { ProductDiscoveryResult } from "@/lib/ai/discovery-types";
 
-export const productDiscoveryJsonSchema: Record<string, unknown> = {
+/**
+ * Minimal schema for Gemini structured output.
+ * Keep this flat — no maxItems/required/enums or Gemini returns
+ * "schema produces a constraint that has too many states for serving".
+ * Full validation runs in discovery-normalize.ts + Zod after the response.
+ */
+export const productDiscoveryGeminiSchema: Record<string, unknown> = {
   type: "object",
   properties: {
     summary: { type: "string" },
     searchedQueries: {
       type: "array",
       items: { type: "string" },
-      maxItems: 6,
     },
     candidates: {
       type: "array",
-      maxItems: 10,
       items: {
         type: "object",
         properties: {
@@ -38,31 +42,19 @@ export const productDiscoveryJsonSchema: Record<string, unknown> = {
           demandSignals: {
             type: "array",
             items: { type: "string" },
-            maxItems: 6,
           },
           risks: {
             type: "array",
             items: { type: "string" },
-            maxItems: 4,
           },
         },
-        required: [
-          "asin",
-          "title",
-          "targetKeyword",
-          "commissionCategory",
-          "estimatedCommissionRate",
-          "demandScore",
-          "reviewFitScore",
-          "overallScore",
-          "rationale",
-          "demandSignals",
-        ],
       },
     },
   },
-  required: ["summary", "searchedQueries", "candidates"],
 };
+
+/** @deprecated Use productDiscoveryGeminiSchema — kept as alias for imports */
+export const productDiscoveryJsonSchema = productDiscoveryGeminiSchema;
 
 export function buildProductDiscoveryPrompt(input: {
   campaignName: string;
@@ -133,7 +125,20 @@ export function buildProductDiscoveryStructurePrompt(input: {
   return `Convert the research notes below into structured JSON for Postyim product discovery.
 
 Rules:
-- Output ONLY valid JSON matching the required schema (no markdown).
+- Output ONLY valid JSON with this shape:
+  {
+    "summary": string,
+    "searchedQueries": string[],
+    "candidates": [{
+      "asin", "title", "targetKeyword", "rationale",
+      "commissionCategory", "estimatedCommissionRate",
+      "demandScore", "reviewFitScore", "overallScore",
+      "demandSignals": string[],
+      "risks": string[] (optional),
+      "price", "currency", "rating", "reviewCount",
+      "amazonUrl", "imageUrl", "estimatedCommissionUsd" (optional)
+    }]
+  }
 - Include up to ${input.limit} candidates, sorted by overallScore descending.
 - Use only ASINs mentioned in the research notes. Never invent ASINs.
 - Normalize ASINs to uppercase 10-character Amazon IDs starting with B.

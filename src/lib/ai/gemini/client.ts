@@ -93,6 +93,41 @@ function describeEmptyGeminiResponse(response: GenerateContentResponse): string 
   return "Gemini returned empty discovery research";
 }
 
+function formatGeminiRequestError(error: unknown): Error {
+  const raw = error instanceof Error ? error.message : String(error);
+  const jsonStart = raw.indexOf("{");
+
+  if (jsonStart >= 0) {
+    try {
+      const parsed = JSON.parse(raw.slice(jsonStart)) as {
+        error?: { message?: string; status?: string; code?: number };
+      };
+      const apiMessage = parsed.error?.message;
+
+      if (apiMessage) {
+        if (apiMessage.includes("too many states for serving")) {
+          return new Error(
+            "Gemini rejected the discovery response schema. Retried with plain JSON mode.",
+          );
+        }
+
+        return new Error(
+          `Gemini API error (${parsed.error?.status ?? parsed.error?.code ?? "unknown"}): ${apiMessage}`,
+        );
+      }
+    } catch {
+      // fall through to raw message
+    }
+  }
+
+  return error instanceof Error ? error : new Error(raw);
+}
+
+function isGeminiSchemaConstraintError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("too many states for serving");
+}
+
 const DISCOVERY_SEARCH_RETRY_SUFFIX =
   "\n\nIMPORTANT: After searching, you MUST write detailed plain-text research notes in your reply (numbered product sections with ASINs, prices, ratings, and search queries used). Do not reply with only tool calls and no text.";
 
@@ -134,7 +169,6 @@ export async function generateDiscoveryJson<T>(input: {
   searchModel?: string;
   searchPrompt: string;
   structurePrompt: string;
-  schema: Record<string, unknown>;
   onSearchComplete?: (researchText: string) => void | Promise<void>;
   onStructureStart?: () => void | Promise<void>;
 }): Promise<{ data: T; text: string; usage?: { promptTokens?: number; outputTokens?: number } }> {
@@ -182,7 +216,6 @@ export async function generateDiscoveryJson<T>(input: {
   const structured = await generateJson<T>({
     model: input.model,
     prompt: `${input.structurePrompt}\n\n---\nResearch notes:\n${researchText}`,
-    schema: input.schema,
   });
 
   return {
@@ -202,41 +235,76 @@ export async function generateDiscoveryJson<T>(input: {
 export async function generateJson<T>(input: {
   model: string;
   prompt: string;
-  schema: Record<string, unknown>;
+  schema?: Record<string, unknown>;
 }): Promise<{ data: T; text: string; usage?: { promptTokens?: number; outputTokens?: number } }> {
   const ai = await getGeminiClient();
 
-  const response = await ai.models.generateContent({
-    model: input.model,
-    contents: input.prompt,
-    config: {
+  const configs: Array<{
+    responseMimeType: "application/json";
+    responseSchema?: Record<string, unknown>;
+    temperature: number;
+  }> = [];
+
+  if (input.schema) {
+    configs.push({
       responseMimeType: "application/json",
       responseSchema: input.schema,
       temperature: 0.8,
-    },
+    });
+  }
+
+  configs.push({
+    responseMimeType: "application/json",
+    temperature: 0.8,
   });
 
-  const text =
-    extractGeminiResponseText(response) ?? response.text?.trim();
+  let lastError: unknown;
 
-  if (!text) {
-    throw new Error(describeEmptyGeminiResponse(response));
+  for (const config of configs) {
+    try {
+      const response = await ai.models.generateContent({
+        model: input.model,
+        contents: input.prompt,
+        config,
+      });
+
+      const text =
+        extractGeminiResponseText(response) ?? response.text?.trim();
+
+      if (!text) {
+        throw new Error(describeEmptyGeminiResponse(response));
+      }
+
+      let data: T;
+
+      try {
+        data = JSON.parse(text) as T;
+      } catch {
+        throw new Error(
+          "Gemini returned invalid JSON during discovery structure step",
+        );
+      }
+
+      return {
+        data,
+        text,
+        usage: {
+          promptTokens: response.usageMetadata?.promptTokenCount,
+          outputTokens: response.usageMetadata?.candidatesTokenCount,
+        },
+      };
+    } catch (error) {
+      lastError = error;
+
+      if (
+        !input.schema ||
+        !isGeminiSchemaConstraintError(error) ||
+        config === configs[configs.length - 1]
+      ) {
+        throw formatGeminiRequestError(error);
+      }
+    }
   }
 
-  let data: T;
-
-  try {
-    data = JSON.parse(text) as T;
-  } catch {
-    throw new Error("Gemini returned invalid JSON during discovery structure step");
-  }
-
-  return {
-    data,
-    text,
-    usage: {
-      promptTokens: response.usageMetadata?.promptTokenCount,
-      outputTokens: response.usageMetadata?.candidatesTokenCount,
-    },
-  };
+  throw formatGeminiRequestError(lastError);
 }

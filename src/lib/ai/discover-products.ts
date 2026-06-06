@@ -16,7 +16,6 @@ import { generateMockProductDiscovery } from "@/lib/ai/mock/discover-products";
 import {
   buildProductDiscoveryPrompt,
   buildProductDiscoveryStructurePrompt,
-  productDiscoveryJsonSchema,
   type ProductDiscoveryGeminiPayload,
 } from "@/lib/ai/prompts/discover-products";
 import { parseAmazonCampaignConfig, parseCampaignKeywords } from "@/lib/affiliate/types";
@@ -148,7 +147,6 @@ export async function discoverProductsForCampaign(
     searchModel,
     searchPrompt,
     structurePrompt: buildProductDiscoveryStructurePrompt({ limit }),
-    schema: productDiscoveryJsonSchema,
     onSearchComplete: async (researchPreview) => {
       const queryMatches = researchPreview.match(/(?:query|search)[^:\n]*:\s*(.+)/gi);
       const previewQueries = queryMatches?.slice(0, 3).map((line) => line.trim()) ?? [];
