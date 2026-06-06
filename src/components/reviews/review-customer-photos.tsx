@@ -8,6 +8,10 @@ interface ReviewCustomerPhotosProps {
   amazonReviewUrl?: string | null;
 }
 
+function formatCustomerPhotoCaption(caption: string): string {
+  return caption.replace(/^customer photo:\s*/i, "").trim();
+}
+
 export function ReviewCustomerPhotos({
   images,
   amazonReviewUrl,
@@ -24,13 +28,12 @@ export function ReviewCustomerPhotos({
       <div className="space-y-1">
         <h2
           id="customer-photos-heading"
-          className="font-[family-name:var(--font-display)] text-sm font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+          className="font-[family-name:var(--font-display)] text-xl font-bold tracking-tight sm:text-2xl"
         >
-          Real buyer photos
+          How it looks in real home offices
         </h2>
-        <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
-          Photos from Amazon verified purchasers. Product appearance may vary by
-          desk setup and lighting.
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Photos from Amazon verified purchasers. Setup and lighting may vary.
         </p>
       </div>
 
@@ -48,7 +51,7 @@ export function ReviewCustomerPhotos({
             />
             {image.caption ? (
               <figcaption className="border-t px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-                {image.caption}
+                {formatCustomerPhotoCaption(image.caption)}
               </figcaption>
             ) : null}
           </figure>

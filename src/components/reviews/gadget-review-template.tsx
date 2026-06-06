@@ -190,13 +190,6 @@ export function GadgetReviewTemplate({
 
             <ReviewHeroGallery images={heroImages} productTitle={product.title} />
 
-            {customerPhotos.length > 0 ? (
-              <ReviewCustomerPhotos
-                images={customerPhotos}
-                amazonReviewUrl={amazonReviewUrl}
-              />
-            ) : null}
-
             <ReviewAtAGlanceBar
               productTitle={product.title}
               productId={product.id}
@@ -219,6 +212,13 @@ export function GadgetReviewTemplate({
 
               <article className="min-w-0 space-y-8">
                 <ReviewMarkdownContent content={enrichedContent} />
+
+                {customerPhotos.length > 0 ? (
+                  <ReviewCustomerPhotos
+                    images={customerPhotos}
+                    amazonReviewUrl={amazonReviewUrl}
+                  />
+                ) : null}
 
                 {author ? <ReviewAuthorCard author={author} /> : null}
 
