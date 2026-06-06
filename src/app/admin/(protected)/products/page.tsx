@@ -33,7 +33,7 @@ export default async function AdminProductsPage() {
           </p>
         </div>
         <Button render={<Link href="/admin/products/new" />}>
-          Add manual product
+          Discover products
         </Button>
       </div>
 
