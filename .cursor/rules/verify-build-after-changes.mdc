@@ -1,17 +1,35 @@
 ---
-description: Run production build after code changes to catch deploy failures
+description: Zero-error gate — lint, TypeScript, and build must pass after code changes
 alwaysApply: true
 ---
 
-# Verify build before finishing
+# Zero-error verification before finishing
 
-After any code change in this project, run `pnpm build` before claiming the work is complete.
+After any code change, all checks must pass with **zero errors** before claiming work is complete:
 
-- `pnpm lint` alone is not enough — TypeScript and Next.js bundling errors only surface at build time.
-- Fix all build errors before handing off; do not leave deploy-breaking issues for CI/production.
-- If build fails, fix the root cause and re-run `pnpm build` until it passes.
+```bash
+pnpm check
+```
 
-Typical build-only failures to watch for:
-- Client components importing server-only modules (e.g. `postgres`, `drizzle` DB code)
-- Invalid type casts that pass ESLint but fail `tsc`
-- Next.js App Router boundary violations
+Or run individually in order:
+
+```bash
+pnpm lint        # ESLint — no errors, no warnings left unfixed
+pnpm typecheck   # tsc --noEmit — TypeScript must be correct
+pnpm build       # next build — catches bundling & App Router issues
+```
+
+## Rules
+
+- Do not hand off with lint errors, TypeScript errors, or build failures.
+- Fix the root cause; do not suppress with `@ts-ignore` or eslint-disable unless truly necessary.
+- Re-run the full check sequence after every fix until all three pass.
+- Error messages in code and UI should be clean, clear, and actionable.
+
+## What each step catches
+
+| Step | Catches |
+|------|---------|
+| `lint` | Code style, unused vars, React/Next.js lint rules |
+| `typecheck` | Type errors, invalid casts, missing properties |
+| `build` | Client/server boundary violations, server-only imports in client bundles |
