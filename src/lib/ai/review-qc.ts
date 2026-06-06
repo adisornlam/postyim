@@ -43,6 +43,11 @@ function buildFailures(
   if (!checklist.noProhibitedPhrases) {
     failures.push("Review contains prohibited AI phrases.");
   }
+  if (!checklist.noAiAuthorshipSignals) {
+    failures.push(
+      "Review title, meta description, or body mentions AI authorship — remove before publish.",
+    );
+  }
   if (!checklist.metaDescriptionLength) {
     failures.push("Meta description must be 120–160 characters.");
   }

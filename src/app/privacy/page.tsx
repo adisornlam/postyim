@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
+
 import { SiteFooter, SiteHeader } from "@/components/site/site-chrome";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description:
+    "What information Postyim collects, how we use analytics and affiliate click data, and how we protect your privacy.",
+};
 
 export default function PrivacyPage() {
   return (

@@ -1,5 +1,6 @@
 import {
   AFFILIATE_DISCLOSURE_MARKERS,
+  containsAiAuthorshipSignals,
   DEFAULT_DISCLOSURE,
   PROHIBITED_PHRASES,
   QUALITY_THRESHOLDS,
@@ -238,6 +239,14 @@ function hasProhibitedPhrases(content: string): boolean {
   return PROHIBITED_PHRASES.some((phrase) => normalized.includes(phrase));
 }
 
+function hasAiAuthorshipSignals(review: GeneratedReview): boolean {
+  return (
+    containsAiAuthorshipSignals(review.content) ||
+    containsAiAuthorshipSignals(review.metaDescription) ||
+    containsAiAuthorshipSignals(review.title)
+  );
+}
+
 function scoreWordCount(wordCount: number): number {
   if (wordCount >= QUALITY_THRESHOLDS.minWordCount) {
     return 100;
@@ -316,6 +325,7 @@ export function evaluateReviewQuality(input: QualityGateInput): QualityGateResul
       input.review.cons.length >= QUALITY_THRESHOLDS.minCons,
     hasDisclosure: hasDisclosure(input.review.content),
     noProhibitedPhrases: !hasProhibitedPhrases(input.review.content),
+    noAiAuthorshipSignals: !hasAiAuthorshipSignals(input.review),
     metaDescriptionLength:
       input.review.metaDescription.length >=
         QUALITY_THRESHOLDS.metaDescriptionMin &&

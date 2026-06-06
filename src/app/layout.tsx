@@ -30,11 +30,17 @@ export const metadata: Metadata = {
     template: `%s | ${siteName}`,
   },
   description:
-    "Expert product reviews and buying guides. AI-assisted editorial workflow with human approval for trustworthy affiliate content.",
+    "Expert product reviews and buying guides. Independent editorial testing with human approval before every publish.",
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName,
+    title: `${siteName} — Product Reviews & Affiliate Insights`,
+    description:
+      "Expert product reviews and buying guides for global shoppers.",
+  },
+  twitter: {
+    card: "summary",
     title: `${siteName} — Product Reviews & Affiliate Insights`,
     description:
       "Expert product reviews and buying guides for global shoppers.",

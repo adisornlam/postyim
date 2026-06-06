@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
+
 import { SiteFooter, SiteHeader } from "@/components/site/site-chrome";
 import { db } from "@/db";
 import { authors } from "@/db/schema";
+
+export const metadata: Metadata = {
+  title: "About Postyim",
+  description:
+    "Meet the editors behind Postyim — independent product reviews and buying guides with human approval before every publish.",
+};
 
 export default async function AboutPage() {
   const team = await db.select().from(authors).limit(6);
@@ -13,16 +21,17 @@ export default async function AboutPage() {
           <section className="space-y-4">
             <h1 className="text-4xl font-semibold tracking-tight">About Postyim</h1>
             <p className="text-lg text-muted-foreground">
-              Postyim is an AI-assisted editorial platform for product reviews
-              and affiliate buying guides. AI helps draft content, but every
-              publish-ready review goes through human approval.
+              Postyim publishes independent product reviews and affiliate buying
+              guides for shoppers who want clear recommendations, not marketing
+              copy. Every review is written from a specialist perspective, checked
+              against product specs, and approved by an editor before it goes live.
             </p>
           </section>
 
           <section className="space-y-4">
             <h2 className="text-2xl font-semibold">Editorial standards</h2>
             <ul className="list-disc space-y-2 pl-5 text-muted-foreground">
-              <li>Reviews must pass an automated quality checklist</li>
+              <li>Reviews must pass our editorial quality checklist</li>
               <li>Human editors approve content before publication</li>
               <li>Affiliate relationships are disclosed on every review</li>
               <li>Product specs and pricing are refreshed on a regular cadence</li>

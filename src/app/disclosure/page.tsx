@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
+
 import { SiteFooter, SiteHeader } from "@/components/site/site-chrome";
 import { DEFAULT_DISCLOSURE } from "@/lib/ai/constants";
+
+export const metadata: Metadata = {
+  title: "Affiliate Disclosure",
+  description:
+    "How Postyim uses affiliate links, earns commissions, and keeps editorial opinions independent from partnerships.",
+};
 
 export default function DisclosurePage() {
   return (
