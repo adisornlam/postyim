@@ -1,0 +1,192 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ github.ref_name == 'dev' && 'Development' || 'Production' }}
+
+    steps:
+      - name: Resolve deploy target
+        id: target
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+            echo "branch=dev" >> "$GITHUB_OUTPUT"
+            echo "app_dir=/var/www/postyim/dev/current" >> "$GITHUB_OUTPUT"
+            echo "pm2_name=postyim-dev" >> "$GITHUB_OUTPUT"
+            echo "health_url=http://127.0.0.1:3007/api/health" >> "$GITHUB_OUTPUT"
+          elif [ "${GITHUB_REF_NAME}" = "main" ]; then
+            echo "branch=main" >> "$GITHUB_OUTPUT"
+            echo "app_dir=/var/www/postyim/prod/current" >> "$GITHUB_OUTPUT"
+            echo "pm2_name=postyim-prod" >> "$GITHUB_OUTPUT"
+            echo "health_url=http://127.0.0.1:3006/api/health" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unsupported branch: ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+
+      - name: Validate required deploy secrets
+        run: |
+          set -euo pipefail
+          missing=0
+
+          check_secret() {
+            local name="$1"
+            local value="$2"
+            if [ -z "${value}" ]; then
+              echo "::error::Missing required secret: ${name} (set it in Environment secrets for '${{ github.ref_name == 'dev' && 'Development' || 'Production' }}')"
+              missing=1
+            fi
+          }
+
+          check_secret "DEPLOY_HOST" "${{ secrets.DEPLOY_HOST }}"
+          check_secret "DEPLOY_USER" "${{ secrets.DEPLOY_USER }}"
+          check_secret "DEPLOY_SSH_KEY" "${{ secrets.DEPLOY_SSH_KEY }}"
+
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Resolve SSH credentials
+        id: ssh
+        run: |
+          set -euo pipefail
+
+          BRANCH="${GITHUB_REF_NAME}"
+
+          HOST_GENERIC="${{ secrets.DEPLOY_HOST }}"
+          HOST_DEV="${{ secrets.DEPLOY_HOST_DEV }}"
+          HOST_PROD="${{ secrets.DEPLOY_HOST_PROD }}"
+          USER_GENERIC="${{ secrets.DEPLOY_USER }}"
+          USER_DEV="${{ secrets.DEPLOY_USER_DEV }}"
+          USER_PROD="${{ secrets.DEPLOY_USER_PROD }}"
+          KEY_GENERIC="${{ secrets.DEPLOY_SSH_KEY }}"
+          KEY_DEV="${{ secrets.DEPLOY_SSH_KEY_DEV }}"
+          KEY_PROD="${{ secrets.DEPLOY_SSH_KEY_PROD }}"
+          PORT_GENERIC="${{ secrets.DEPLOY_PORT }}"
+          PORT_DEV="${{ secrets.DEPLOY_PORT_DEV }}"
+          PORT_PROD="${{ secrets.DEPLOY_PORT_PROD }}"
+
+          if [ -n "${HOST_GENERIC}" ] && { [ -n "${HOST_DEV}" ] || [ -n "${HOST_PROD}" ]; }; then
+            echo "::error::Conflict detected: DEPLOY_HOST cannot be used together with DEPLOY_HOST_DEV/DEPLOY_HOST_PROD."
+            exit 1
+          fi
+
+          if [ -n "${USER_GENERIC}" ] && { [ -n "${USER_DEV}" ] || [ -n "${USER_PROD}" ]; }; then
+            echo "::error::Conflict detected: DEPLOY_USER cannot be used together with DEPLOY_USER_DEV/DEPLOY_USER_PROD."
+            exit 1
+          fi
+
+          if [ -n "${KEY_GENERIC}" ] && { [ -n "${KEY_DEV}" ] || [ -n "${KEY_PROD}" ]; }; then
+            echo "::error::Conflict detected: DEPLOY_SSH_KEY cannot be used together with DEPLOY_SSH_KEY_DEV/DEPLOY_SSH_KEY_PROD."
+            exit 1
+          fi
+
+          if [ -n "${PORT_GENERIC}" ] && { [ -n "${PORT_DEV}" ] || [ -n "${PORT_PROD}" ]; }; then
+            echo "::error::Conflict detected: DEPLOY_PORT cannot be used together with DEPLOY_PORT_DEV/DEPLOY_PORT_PROD."
+            exit 1
+          fi
+
+          if [ "${BRANCH}" = "dev" ]; then
+            HOST="${HOST_GENERIC:-${HOST_DEV}}"
+            USERNAME="${USER_GENERIC:-${USER_DEV}}"
+            KEY="${KEY_GENERIC:-${KEY_DEV}}"
+            PORT="${PORT_GENERIC:-${PORT_DEV:-22}}"
+          elif [ "${BRANCH}" = "main" ]; then
+            HOST="${HOST_GENERIC:-${HOST_PROD}}"
+            USERNAME="${USER_GENERIC:-${USER_PROD}}"
+            KEY="${KEY_GENERIC:-${KEY_PROD}}"
+            PORT="${PORT_GENERIC:-${PORT_PROD:-22}}"
+          else
+            echo "::error::Unsupported branch: ${BRANCH}"
+            exit 1
+          fi
+
+          if [ -z "${HOST}" ] || [ -z "${USERNAME}" ] || [ -z "${KEY}" ]; then
+            echo "::error::Resolved SSH credentials are incomplete for branch '${BRANCH}'."
+            exit 1
+          fi
+
+          USERNAME="$(printf '%s' "$USERNAME" | tr -d '\r\n\t' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          HOST="$(printf '%s' "$HOST" | tr -d '\r\n\t' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          KEY="$(printf '%s' "$KEY" | sed 's/\r$//')"
+
+          if ! printf '%s\n' "$KEY" | head -n 1 | grep -q '^-----BEGIN OPENSSH PRIVATE KEY-----\|^-----BEGIN RSA PRIVATE KEY-----\|^-----BEGIN EC PRIVATE KEY-----\|^-----BEGIN PRIVATE KEY-----'; then
+            echo "::error::DEPLOY_SSH_KEY is not a valid private-key block header."
+            exit 1
+          fi
+          if ! printf '%s\n' "$KEY" | tail -n 1 | grep -q '^-----END .* PRIVATE KEY-----'; then
+            echo "::error::DEPLOY_SSH_KEY is missing a valid private-key footer."
+            exit 1
+          fi
+
+          if ! [[ "$HOST" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+            echo "::error::DEPLOY_HOST must be an IPv4 address (example: 5.223.57.67)."
+            exit 1
+          fi
+
+          IFS='.' read -r o1 o2 o3 o4 <<< "$HOST"
+          for o in "$o1" "$o2" "$o3" "$o4"; do
+            if [ "$o" -lt 0 ] || [ "$o" -gt 255 ]; then
+              echo "::error::DEPLOY_HOST octet out of range: $HOST"
+              exit 1
+            fi
+          done
+
+          echo "host=${HOST}" >> "$GITHUB_OUTPUT"
+          echo "username=${USERNAME}" >> "$GITHUB_OUTPUT"
+          echo "key<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${KEY}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "port=${PORT}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy via SSH script
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          REPO_URL: ${{ secrets.DEPLOY_REPO_URL }}
+          BRANCH: ${{ steps.target.outputs.branch }}
+          APP_DIR: ${{ steps.target.outputs.app_dir }}
+          PM2_NAME: ${{ steps.target.outputs.pm2_name }}
+          HEALTH_URL: ${{ steps.target.outputs.health_url }}
+        with:
+          host: ${{ steps.ssh.outputs.host }}
+          username: ${{ steps.ssh.outputs.username }}
+          key: ${{ steps.ssh.outputs.key }}
+          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }}
+          port: ${{ steps.ssh.outputs.port }}
+          envs: REPO_URL,BRANCH,APP_DIR,PM2_NAME,HEALTH_URL
+          script_stop: true
+          script: |
+            set -euo pipefail
+
+            if [ -z "${REPO_URL:-}" ]; then
+              REPO_URL="https://github.com/${{ github.repository }}.git"
+            fi
+
+            export NODE_OPTIONS="--max-old-space-size=3072"
+
+            sudo /usr/local/bin/deploy-next-safe.sh "$REPO_URL" "$BRANCH" "$APP_DIR" "$PM2_NAME"
+
+            pm2 describe "$PM2_NAME" | awk 'BEGIN{IGNORECASE=1} /status|uptime|script path/'
+
+            for i in 1 2 3 4 5 6 7 8 9 10; do
+              if curl -fsS "$HEALTH_URL" >/dev/null; then
+                echo "Health check passed: $HEALTH_URL"
+                exit 0
+              fi
+              echo "Health check retry $i/10..."
+              sleep 3
+            done
+
+            echo "Health check failed: $HEALTH_URL"
+            exit 1
