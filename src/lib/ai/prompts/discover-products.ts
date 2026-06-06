@@ -11,6 +11,7 @@ export const productDiscoveryJsonSchema: Record<string, unknown> = {
     searchedQueries: {
       type: "array",
       items: { type: "string" },
+      maxItems: 6,
     },
     candidates: {
       type: "array",
@@ -137,7 +138,7 @@ Rules:
 - currency must be "USD" when price is present.
 - estimatedCommissionRate is a decimal (e.g. 0.045 for 4.5%).
 - risks may be an empty array.
-- searchedQueries must list the Google queries from the research notes.`;
+- searchedQueries must list at most 6 unique Google queries actually used (not every keyword variant).`;
 }
 
 export type ProductDiscoveryGeminiPayload = ProductDiscoveryResult;

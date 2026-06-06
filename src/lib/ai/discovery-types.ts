@@ -28,9 +28,40 @@ export const discoveryCandidateSchema = z.object({
 
 export type DiscoveryCandidate = z.infer<typeof discoveryCandidateSchema>;
 
+export const MAX_SEARCHED_QUERIES = 12;
+
+export function normalizeSearchedQueries(queries: string[]): string[] {
+  const seen = new Set<string>();
+  const output: string[] = [];
+
+  for (const query of queries) {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      continue;
+    }
+
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    output.push(trimmed);
+
+    if (output.length >= MAX_SEARCHED_QUERIES) {
+      break;
+    }
+  }
+
+  return output;
+}
+
 export const productDiscoveryResultSchema = z.object({
   summary: z.string().trim().min(10).max(2000),
-  searchedQueries: z.array(z.string().trim().min(1)).min(1).max(12),
+  searchedQueries: z
+    .array(z.string())
+    .transform(normalizeSearchedQueries)
+    .pipe(z.array(z.string().trim().min(1)).min(1).max(MAX_SEARCHED_QUERIES)),
   candidates: z.array(discoveryCandidateSchema).min(1).max(10),
 });
 
