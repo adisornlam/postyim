@@ -17,6 +17,7 @@ interface ReviewJsonLdProps {
     currency: string;
     imageUrl?: string | null;
     affiliateLink: string;
+    externalId?: string | null;
   };
   author?: {
     name: string;
@@ -87,6 +88,8 @@ export function ReviewJsonLd({
         description: product.description ?? review.content.slice(0, 300),
         image: product.imageUrl ?? undefined,
         url: reviewUrl,
+        sku: product.externalId ?? undefined,
+        mpn: product.externalId ?? undefined,
         offers: product.price
           ? {
               "@type": "Offer",

@@ -32,6 +32,34 @@ export async function getReviewBySlug(slug: string) {
   return row ?? null;
 }
 
+export async function findPublishedReviewSlugRedirect(
+  requestedSlug: string,
+): Promise<string | null> {
+  const rows = await db
+    .select({
+      slug: reviews.slug,
+      rawData: products.rawData,
+    })
+    .from(reviews)
+    .innerJoin(products, eq(products.id, reviews.productId))
+    .where(eq(reviews.status, "published"));
+
+  for (const row of rows) {
+    if (row.slug === requestedSlug) {
+      continue;
+    }
+
+    const rawData = row.rawData as { legacyReviewSlugs?: string[] } | null;
+    const legacySlugs = rawData?.legacyReviewSlugs ?? [];
+
+    if (legacySlugs.includes(requestedSlug)) {
+      return row.slug;
+    }
+  }
+
+  return null;
+}
+
 export async function getPublishedReviewBySlug(slug: string) {
   const row = await getReviewBySlug(slug);
 

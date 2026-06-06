@@ -90,5 +90,22 @@
       "alt": "Lepro LED desk lamp eye-care diffused frosted shade close-up",
       "role": "detail"
     }
+  ],
+  "customerPhotos": [
+    {
+      "url": "https://m.media-amazon.com/images/I/71LTlvPbiPL._AC_SL1500_.jpg",
+      "alt": "Lepro desk lamp lighting a craft desk — buyer photo",
+      "role": "customer"
+    },
+    {
+      "url": "https://m.media-amazon.com/images/I/71zdFDPkyYL._AC_SL1500_.jpg",
+      "alt": "Lepro desk lamp on a home office desk — buyer photo",
+      "role": "customer"
+    },
+    {
+      "url": "https://m.media-amazon.com/images/I/61M9NMTA3WL._AC_SL1500_.jpg",
+      "alt": "Lepro lamp arm angle on a work desk — buyer photo",
+      "role": "customer"
+    }
   ]
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+import { ReviewCustomerPhotos } from "@/components/reviews/review-customer-photos";
 import { ProductImage } from "@/components/reviews/product-image";
 
 import { ReviewJsonLd } from "@/components/seo/review-json-ld";
@@ -17,6 +18,7 @@ import { ReviewTableOfContents } from "@/components/reviews/review-table-of-cont
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_DISCLOSURE, AFFILIATE_DISCLOSURE_MARKERS } from "@/lib/ai/constants";
 import {
+  getCustomerPhotosFromAssets,
   getSectionProductImages,
   resolveHeroGalleryImages,
 } from "@/lib/reviews/review-images";
@@ -114,6 +116,14 @@ export function GadgetReviewTemplate({
       : `$${product.price} ${product.currency}`;
 
   const heroImages = resolveReviewImages(product, mediaAssets);
+  const customerPhotos = getCustomerPhotosFromAssets({
+    productTitle: product.title,
+    mediaAssets,
+    customerPhotos: undefined,
+  });
+  const amazonReviewUrl = product.externalId
+    ? `https://www.amazon.com/dp/${product.externalId.toUpperCase()}#customerReviews`
+    : null;
   const sectionImages = getSectionProductImages({
     productTitle: product.title,
     productImageUrl: product.imageUrl,
@@ -179,6 +189,13 @@ export function GadgetReviewTemplate({
             </div>
 
             <ReviewHeroGallery images={heroImages} productTitle={product.title} />
+
+            {customerPhotos.length > 0 ? (
+              <ReviewCustomerPhotos
+                images={customerPhotos}
+                amazonReviewUrl={amazonReviewUrl}
+              />
+            ) : null}
 
             <ReviewAtAGlanceBar
               productTitle={product.title}

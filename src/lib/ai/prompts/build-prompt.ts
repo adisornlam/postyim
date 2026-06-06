@@ -5,6 +5,10 @@ import {
   PROHIBITED_PHRASES,
   REVIEW_STRUCTURE_TEMPLATES,
 } from "@/lib/ai/constants";
+import {
+  buildReviewTitleGuidance,
+  buildSectionKeywordGuidance,
+} from "@/lib/ai/prompts/section-keywords";
 
 function formatSpecs(specs: Record<string, unknown>): string {
   return JSON.stringify(specs, null, 2);
@@ -71,6 +75,10 @@ Writing template: ${template.id}
 Opening style: ${template.openingStyle}
 Section order (use these as H2 headings):
 ${template.sections.map((section, index) => `${index + 1}. ${section}`).join("\n")}
+
+${buildSectionKeywordGuidance(template.id, input.targetKeyword)}
+
+${buildReviewTitleGuidance(input)}
 
 Requirements:
 - Write in English for a global audience.

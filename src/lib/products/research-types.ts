@@ -26,6 +26,7 @@ export const productResearchSchema = z.object({
   verifiedFacts: z.array(z.string().trim().min(1)).min(1),
   specs: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
   productImages: z.array(productResearchImageSchema).min(1),
+  customerPhotos: z.array(productResearchImageSchema).max(3).optional(),
   amazonUrl: z.string().url().optional(),
 });
 

@@ -6,6 +6,7 @@ export const PRODUCT_IMAGE_ROLES = [
   "detail",
   "lifestyle",
   "diagram",
+  "customer",
 ] as const;
 
 export type ProductImageRole = (typeof PRODUCT_IMAGE_ROLES)[number];
@@ -71,7 +72,10 @@ export function selectHeroImages(
   limit = 3,
 ): ProductResearchImage[] {
   const amazonOnly = images.filter(
-    (image) => image.role !== "lifestyle" && image.role !== "diagram",
+    (image) =>
+      image.role !== "lifestyle" &&
+      image.role !== "diagram" &&
+      image.role !== "customer",
   );
 
   const ranked = sortImagesByRole(amazonOnly, HERO_ROLE_PRIORITY);
@@ -84,7 +88,9 @@ export function selectSectionImages(
   images: ProductResearchImage[],
   limit = 5,
 ): ProductResearchImage[] {
-  const amazonOnly = images.filter((image) => image.role !== "lifestyle");
+  const amazonOnly = images.filter(
+    (image) => image.role !== "lifestyle" && image.role !== "customer",
+  );
 
   const ranked = sortImagesByRole(amazonOnly, SECTION_ROLE_PRIORITY);
   const unique = dedupeByUrl(ranked);

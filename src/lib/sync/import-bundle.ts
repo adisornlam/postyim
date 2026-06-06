@@ -250,11 +250,22 @@ export async function importSyncBundle(bundle: SyncBundle): Promise<SyncPushResu
       ? `${siteUrl}/reviews/${bundle.review.slug}`
       : null;
 
-  const [existingReview] = await db
+  const [existingReviewBySlug] = await db
     .select({ id: reviews.id })
     .from(reviews)
     .where(eq(reviews.slug, bundle.review.slug))
     .limit(1);
+
+  let existingReview = existingReviewBySlug ?? null;
+
+  if (!existingReview) {
+    const [byProduct] = await db
+      .select({ id: reviews.id })
+      .from(reviews)
+      .where(eq(reviews.productId, productId))
+      .limit(1);
+    existingReview = byProduct ?? null;
+  }
 
   let reviewId: string;
   let reviewCreated = false;
@@ -268,6 +279,7 @@ export async function importSyncBundle(bundle: SyncBundle): Promise<SyncPushResu
         productId,
         authorId,
         keywordId: keyword.id,
+        slug: bundle.review.slug,
         title: bundle.review.title,
         metaDescription: bundle.review.metaDescription,
         content: bundle.review.content,

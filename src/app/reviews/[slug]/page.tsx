@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { ReviewPageView } from "@/components/reviews/review-page-view";
 import { getSiteName, getSiteUrl } from "@/lib/env";
 import {
+  findPublishedReviewSlugRedirect,
   getMediaAssetsForProduct,
   getPublishedReviewBySlug,
   getRelatedPublishedReviews,
@@ -62,6 +63,11 @@ export default async function ReviewPage({
   const data = await getPublishedReviewBySlug(slug);
 
   if (!data) {
+    const redirectSlug = await findPublishedReviewSlugRedirect(slug);
+    if (redirectSlug) {
+      redirect(`/reviews/${redirectSlug}`);
+    }
+
     notFound();
   }
 

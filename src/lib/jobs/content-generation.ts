@@ -18,6 +18,7 @@ import { getSiteName, getSiteUrl } from "@/lib/env";
 import { enrichReviewContent } from "@/lib/reviews/enrich-review-content";
 import { getSectionProductImages } from "@/lib/reviews/review-images";
 import { evaluatePublishReadiness } from "@/lib/reviews/publish-readiness";
+import { buildReviewSlug, extractBrandFromTitle } from "@/lib/reviews/review-slug";
 import { extractProductResearch } from "@/lib/products/research-types";
 import { resolveTargetKeyword as resolveProductKeyword } from "@/lib/seo/resolve-target-keyword";
 import {
@@ -193,7 +194,15 @@ export async function generateReviewForProduct(
         productId: product.id,
         authorId: author.id,
         keywordId: keyword.id,
-        slug: `${product.slug}-review`.slice(0, 200),
+        slug: buildReviewSlug({
+          targetKeyword: manualKeyword ?? keyword.keyword,
+          productTitle: product.title,
+          brand:
+            typeof (product.specs as Record<string, unknown> | null)?.brand ===
+            "string"
+              ? ((product.specs as Record<string, unknown>).brand as string)
+              : extractBrandFromTitle(product.title),
+        }),
         title: `${product.title} Review`,
         content: "Generating...",
         status: "generating",
@@ -366,7 +375,49 @@ export async function generateReviewForProduct(
     changeReason: isInitialGeneration ? "initial_generation" : "regenerate",
   });
 
-  const reviewSlug = `${product.slug}-review`.slice(0, 200);
+  const reviewSlug = buildReviewSlug({
+    targetKeyword: keyword.keyword,
+    productTitle: product.title,
+    brand:
+      typeof (product.specs as Record<string, unknown> | null)?.brand ===
+      "string"
+        ? ((product.specs as Record<string, unknown>).brand as string)
+        : extractBrandFromTitle(product.title),
+  });
+
+  const previousReviewSlug = review.slug;
+  const slugChanged =
+    previousReviewSlug && previousReviewSlug !== reviewSlug && qualityPassed;
+
+  if (slugChanged) {
+    const rawData =
+      product.rawData && typeof product.rawData === "object"
+        ? ({ ...(product.rawData as Record<string, unknown>) } as Record<
+            string,
+            unknown
+          >)
+        : {};
+    const legacyReviewSlugs = Array.isArray(rawData.legacyReviewSlugs)
+      ? [...(rawData.legacyReviewSlugs as string[])]
+      : [];
+
+    if (
+      previousReviewSlug &&
+      !legacyReviewSlugs.includes(previousReviewSlug)
+    ) {
+      legacyReviewSlugs.push(previousReviewSlug);
+    }
+
+    rawData.legacyReviewSlugs = legacyReviewSlugs;
+
+    await db
+      .update(products)
+      .set({
+        rawData,
+        updatedAt: new Date(),
+      })
+      .where(eq(products.id, product.id));
+  }
 
   const nextStatus =
     options?.preservePublished && previousStatus

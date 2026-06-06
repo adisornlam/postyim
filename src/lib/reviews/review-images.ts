@@ -14,6 +14,7 @@ import {
   getHeroGalleryImages,
   type EditorialImage,
 } from "@/lib/reviews/editorial-images";
+import { isCustomerPhotoAsset } from "@/lib/reviews/review-slug";
 
 export interface ReviewMediaAsset {
   url: string;
@@ -67,6 +68,10 @@ function mediaAssetsToResearchImages(
 
   for (const asset of sortedAssets) {
     if (!isAmazonProductImageUrl(asset.url)) {
+      continue;
+    }
+
+    if (isCustomerPhotoAsset(asset)) {
       continue;
     }
 
@@ -248,3 +253,42 @@ export function resolveProductCoverUrl(
 }
 
 export { resolveCoverImage, selectHeroImages, selectSectionImages };
+
+const CUSTOMER_PHOTO_CAPTION =
+  "Photo from an Amazon verified purchaser.";
+
+export function getCustomerPhotosFromAssets(input: {
+  productTitle: string;
+  mediaAssets?: ReviewMediaAsset[];
+  customerPhotos?: ProductResearchImage[];
+  limit?: number;
+}): EditorialImage[] {
+  const limit = input.limit ?? 3;
+  const images: EditorialImage[] = [];
+
+  if (input.customerPhotos?.length) {
+    for (const image of input.customerPhotos) {
+      images.push({
+        url: normalizeAmazonImageUrl(image.url),
+        alt: image.alt ?? `${input.productTitle} in a buyer's home office`,
+        caption: image.alt ?? CUSTOMER_PHOTO_CAPTION,
+      });
+    }
+  }
+
+  if (images.length === 0 && input.mediaAssets?.length) {
+    for (const asset of input.mediaAssets) {
+      if (!isAmazonProductImageUrl(asset.url) || !isCustomerPhotoAsset(asset)) {
+        continue;
+      }
+
+      images.push({
+        url: normalizeAmazonImageUrl(asset.url),
+        alt: asset.altText ?? `${input.productTitle} in a buyer's home office`,
+        caption: asset.altText ?? CUSTOMER_PHOTO_CAPTION,
+      });
+    }
+  }
+
+  return images.slice(0, limit);
+}
