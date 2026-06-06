@@ -52,8 +52,20 @@ jobs:
           check_secret "DEPLOY_HOST" "${{ secrets.DEPLOY_HOST }}"
           check_secret "DEPLOY_USER" "${{ secrets.DEPLOY_USER }}"
           check_secret "DEPLOY_SSH_KEY" "${{ secrets.DEPLOY_SSH_KEY }}"
+          check_secret "DEPLOY_PORT" "${{ secrets.DEPLOY_PORT }}"
+          check_secret "DEPLOY_REPO_URL" "${{ secrets.DEPLOY_REPO_URL }}"
 
           if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+          if ! [[ "${{ secrets.DEPLOY_PORT }}" =~ ^[0-9]+$ ]] || [ "${{ secrets.DEPLOY_PORT }}" -lt 1 ] || [ "${{ secrets.DEPLOY_PORT }}" -gt 65535 ]; then
+            echo "::error::DEPLOY_PORT must be a valid TCP port (1-65535)."
+            exit 1
+          fi
+
+          if ! printf '%s' "${{ secrets.DEPLOY_REPO_URL }}" | grep -Eq '^(https://|git@|ssh://)'; then
+            echo "::error::DEPLOY_REPO_URL must be a git remote URL (https://, git@, or ssh://)."
             exit 1
           fi
 
@@ -170,7 +182,8 @@ jobs:
             set -euo pipefail
 
             if [ -z "${REPO_URL:-}" ]; then
-              REPO_URL="https://github.com/${{ github.repository }}.git"
+              echo "DEPLOY_REPO_URL is required but was not provided to the remote deploy step."
+              exit 1
             fi
 
             export NODE_OPTIONS="--max-old-space-size=3072"
