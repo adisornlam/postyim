@@ -6,16 +6,19 @@ import {
   campaigns,
   contentQualityScores,
   keywords,
+  mediaAssets,
   products,
   reviewVersions,
   reviews,
 } from "@/db/schema";
 import { generateProductReview } from "@/lib/ai";
 import { ensureDisclosure, evaluateReviewQuality } from "@/lib/ai/quality-gate";
+import { normalizeReviewTitle } from "@/lib/ai/constants";
 import { getSiteName, getSiteUrl } from "@/lib/env";
 import { enrichReviewContent } from "@/lib/reviews/enrich-review-content";
-import { getEditorialImagesForProduct } from "@/lib/reviews/editorial-images";
+import { getSectionEditorialImages } from "@/lib/reviews/review-images";
 import { evaluatePublishReadiness } from "@/lib/reviews/publish-readiness";
+import { extractProductResearch } from "@/lib/products/research-types";
 import { resolveTargetKeyword as resolveProductKeyword } from "@/lib/seo/resolve-target-keyword";
 import {
   finishJobRun,
@@ -206,6 +209,8 @@ export async function generateReviewForProduct(
       .returning();
   }
 
+  const factSheet = extractProductResearch(product.rawData) ?? undefined;
+
   const generation = await generateProductReview({
     product: {
       id: product.id,
@@ -226,17 +231,19 @@ export async function generateReviewForProduct(
     targetKeyword: keyword.keyword,
     templateId: "",
     siteName: getSiteName(),
+    factSheet,
   });
 
-  const editorialImages = getEditorialImagesForProduct({
+  const sectionImages = getSectionEditorialImages({
     externalId: product.externalId,
     title: product.title,
   });
 
   const reviewContent = {
     ...generation.review,
+    title: normalizeReviewTitle(generation.review.title, keyword.keyword),
     content: ensureDisclosure(
-      enrichReviewContent(generation.review.content, editorialImages),
+      enrichReviewContent(generation.review.content, sectionImages),
     ),
   };
 
@@ -248,6 +255,12 @@ export async function generateReviewForProduct(
     externalId: product.externalId,
   });
 
+  const productMedia = await db
+    .select({ url: mediaAssets.url, altText: mediaAssets.altText, sortOrder: mediaAssets.sortOrder })
+    .from(mediaAssets)
+    .where(eq(mediaAssets.productId, product.id))
+    .orderBy(mediaAssets.sortOrder);
+
   const publishReadiness = evaluatePublishReadiness({
     content: reviewContent.content,
     product: {
@@ -255,6 +268,7 @@ export async function generateReviewForProduct(
       externalId: product.externalId,
       imageUrl: product.imageUrl,
     },
+    mediaAssets: productMedia,
   });
 
   const qualityPassed =

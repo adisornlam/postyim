@@ -1,5 +1,5 @@
 import { generateJson, getReviewGenerationModel } from "@/lib/ai/gemini/client";
-import { normalizeMetaDescription } from "@/lib/ai/constants";
+import { normalizeMetaDescription, normalizeReviewTitle, stripProhibitedPhrases } from "@/lib/ai/constants";
 import {
   buildReviewPrompt,
   generatedReviewJsonSchema,
@@ -27,7 +27,9 @@ export async function generateReviewWithGemini(
 
   const review = generatedReviewSchema.parse({
     ...response.data,
+    title: normalizeReviewTitle(response.data.title, input.targetKeyword),
     metaDescription: normalizeMetaDescription(response.data.metaDescription),
+    content: stripProhibitedPhrases(response.data.content),
   });
 
   return {

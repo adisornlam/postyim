@@ -16,6 +16,12 @@ export interface SyncKeywordPayload {
   intent?: "commercial" | "informational" | "transactional" | "comparison";
 }
 
+export interface SyncMediaAssetPayload {
+  url: string;
+  altText?: string | null;
+  sortOrder: number;
+}
+
 export interface SyncProductPayload {
   campaignSlug: string;
   externalId: string;
@@ -28,6 +34,7 @@ export interface SyncProductPayload {
   specs?: Record<string, unknown>;
   rawData?: unknown;
   categorySlug?: string;
+  mediaAssets?: SyncMediaAssetPayload[];
 }
 
 export interface SyncReviewPayload {

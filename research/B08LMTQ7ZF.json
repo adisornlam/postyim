@@ -1,0 +1,80 @@
+{
+  "asin": "B08LMTQ7ZF",
+  "source": "amazon-research",
+  "researchedAt": "2026-06-06T09:15:00.000Z",
+  "campaignId": "a5a262f1-3c29-49ff-a11a-fe7cce0a70c6",
+  "title": "Lepro LED Desk Lamp for Home Office, 9.5W 750LM Metal Touch Control Desk Light, 5 Color Modes 5 Brightness Level, Eye Caring Task Lamp For Reading, Sewing, Crafts, School Supplies, Puzzle Light, Black",
+  "description": "Compact metal desk lamp with 5 color temperatures, 5 brightness levels, eye-care diffused lighting, and memory function for home office and reading.",
+  "price": 22.99,
+  "currency": "USD",
+  "rating": 4.8,
+  "reviewCount": 8011,
+  "targetKeyword": "best LED desk lamp for home office",
+  "amazonUrl": "https://www.amazon.com/dp/B08LMTQ7ZF",
+  "bullets": [
+    "Multiple Lighting Choices. This led desktop lamp offers 5 lighting modes that can each be paired with one of the 5 brightness levels for a total of 25 different light settings.",
+    "Eye Care Diffused Non-Flickering Lighting. With frosted shade and a long lamp head, it cast a broader span of soft light, efficiently reduce the contrast between your monitor and the surrounding area, creating a more comfortable environment for your eyes.",
+    "Sleek and Minimalist. It won't hog space on your desk, fits nicely in any desk, work bench, sewing table, bedside nightstands, nail station etc.",
+    "Energy Saving LED Lamp No Heat Up. Reduce the electricity bill by 75% and do not overheat like other traditional lights. Keep your workspace cool and comfortable.",
+    "Fully Adjustable Angle. Flexible to bend the main body of the lamp and the top light bar. You can focus the light exactly where you need it."
+  ],
+  "verifiedFacts": [
+    "9.5W LED with 750 lumens maximum brightness",
+    "5 color temperature modes: 3000K, 3500K, 4000K, 5000K, and 6500K",
+    "5 brightness levels paired with color modes for 25 total light settings",
+    "Touch control on the lamp base",
+    "Memory function restores the last-used brightness and color settings when powered back on",
+    "Eye-care diffused non-flickering light with frosted shade and long lamp head",
+    "Metal base with aluminum and plastic construction; compact minimalist desk footprint",
+    "Fully adjustable lamp body and light bar angle",
+    "Corded electric design with 100-240V input and 12V working voltage",
+    "Dimensions: 13.4\"D x 3.9\"W x 15.1\"H; height 15.1 inches",
+    "Model number PR310002-DWW",
+    "Amazon rating 4.8 out of 5 from 8,011+ customer reviews",
+    "Ranked #5 in Desk Lamps on Amazon US",
+    "No smart app or Wi-Fi control — adjustments are touch-only",
+    "Not cordless; requires outlet power"
+  ],
+  "specs": {
+    "brand": "Lepro",
+    "model": "PR310002-DWW",
+    "wattage": "9.5W",
+    "brightness": "750 lm",
+    "colorTemperatures": "3000K, 3500K, 4000K, 5000K, 6500K",
+    "brightnessLevels": 5,
+    "colorModes": 5,
+    "control": "Touch",
+    "memoryFunction": true,
+    "powerSource": "Corded Electric",
+    "inputVoltage": "100-240V",
+    "workingVoltage": "12V",
+    "material": "Aluminum + plastic",
+    "baseMaterial": "Metal",
+    "dimensions": "13.4\"D x 3.9\"W x 15.1\"H",
+    "height": "15.1 inch",
+    "finish": "Matte, Lacquered",
+    "color": "Black",
+    "lampType": "Desk Lamp",
+    "amazonRating": 4.8,
+    "amazonReviewCount": 8011,
+    "bestSellerRank": "#5 in Desk Lamps"
+  },
+  "productImages": [
+    {
+      "url": "https://m.media-amazon.com/images/I/51aiEGGoX5L._AC_SL1500_.jpg",
+      "alt": "Lepro LED Desk Lamp front view on desk"
+    },
+    {
+      "url": "https://m.media-amazon.com/images/I/41Z1LgP3cGL._AC_SL1500_.jpg",
+      "alt": "Lepro LED Desk Lamp side angle"
+    },
+    {
+      "url": "https://m.media-amazon.com/images/I/41kNDTpo7hL._AC_SL1500_.jpg",
+      "alt": "Lepro LED Desk Lamp touch control detail"
+    },
+    {
+      "url": "https://m.media-amazon.com/images/I/41HmQiLkXwL._AC_SL1500_.jpg",
+      "alt": "Lepro LED Desk Lamp adjustable arm"
+    }
+  ]
+}

@@ -48,6 +48,34 @@ export function normalizeMetaDescription(value: string): string {
   return base;
 }
 
+export function normalizeReviewTitle(title: string, targetKeyword: string): string {
+  const trimmed = title.trim();
+  const keyword = targetKeyword.trim();
+
+  if (!keyword) {
+    return trimmed.slice(0, 300);
+  }
+
+  if (trimmed.toLowerCase().includes(keyword.toLowerCase())) {
+    return trimmed.slice(0, 300);
+  }
+
+  const titledKeyword = keyword.charAt(0).toUpperCase() + keyword.slice(1);
+  const suffix = trimmed.replace(/^[^:]+:\s*/, "").trim() || trimmed;
+  return `${titledKeyword}: ${suffix}`.slice(0, 300);
+}
+
+export function stripProhibitedPhrases(content: string): string {
+  let next = content;
+
+  for (const phrase of PROHIBITED_PHRASES) {
+    const pattern = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
+    next = next.replace(pattern, "");
+  }
+
+  return next.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 export const REVIEW_STRUCTURE_TEMPLATES = [
   {
     id: "hands-on-first",

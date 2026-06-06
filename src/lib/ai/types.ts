@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { ProductResearch } from "@/lib/products/research-types";
+
 export const generatedReviewSchema = z.object({
   title: z.string().min(10).max(300),
   metaDescription: z.string().min(120).max(160),
@@ -32,6 +34,7 @@ export interface ReviewGenerationInput {
   targetKeyword: string;
   templateId: string;
   siteName: string;
+  factSheet?: ProductResearch;
 }
 
 export interface ReviewGenerationResult {

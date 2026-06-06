@@ -6,6 +6,7 @@ import {
   categories,
   contentQualityScores,
   keywords,
+  mediaAssets,
   products,
   reviews,
 } from "@/db/schema";
@@ -41,7 +42,17 @@ async function loadReviewContext(reviewId: string) {
     throw new Error(`Review not found: ${reviewId}`);
   }
 
-  return row;
+  const assets = await db
+    .select({
+      url: mediaAssets.url,
+      altText: mediaAssets.altText,
+      sortOrder: mediaAssets.sortOrder,
+    })
+    .from(mediaAssets)
+    .where(eq(mediaAssets.productId, row.product.id))
+    .orderBy(mediaAssets.sortOrder);
+
+  return { ...row, assets };
 }
 
 async function loadProductContext(productId: string) {
@@ -71,8 +82,14 @@ function buildBundleFromContext(input: {
   review?: typeof reviews.$inferSelect;
   keyword?: typeof keywords.$inferSelect | null;
   qualityScore?: typeof contentQualityScores.$inferSelect | null;
+  assets?: Array<{
+    url: string;
+    altText: string | null;
+    sortOrder: number;
+  }>;
 }): SyncBundle {
-  const { product, campaign, category, review, keyword, qualityScore } = input;
+  const { product, campaign, category, review, keyword, qualityScore, assets } =
+    input;
 
   return {
     version: SYNC_BUNDLE_VERSION,
@@ -111,6 +128,11 @@ function buildBundleFromContext(input: {
           : {},
       rawData: product.rawData,
       categorySlug: category?.slug,
+      mediaAssets: assets?.map((asset) => ({
+        url: asset.url,
+        altText: asset.altText,
+        sortOrder: asset.sortOrder,
+      })),
     },
     review: review
       ? {
@@ -158,6 +180,7 @@ export async function exportSyncBundleByReviewId(
     review: row.review,
     keyword: row.keyword,
     qualityScore,
+    assets: row.assets,
   });
 }
 

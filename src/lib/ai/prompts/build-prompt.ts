@@ -1,3 +1,4 @@
+import type { ProductResearch } from "@/lib/products/research-types";
 import type { ReviewGenerationInput } from "@/lib/ai/types";
 import {
   DEFAULT_DISCLOSURE,
@@ -20,6 +21,22 @@ function formatCredentials(credentials: unknown): string {
 export function pickReviewTemplate() {
   const index = Math.floor(Math.random() * REVIEW_STRUCTURE_TEMPLATES.length);
   return REVIEW_STRUCTURE_TEMPLATES[index];
+}
+
+function formatFactSheet(factSheet: ProductResearch): string {
+  return `
+Verified product fact sheet (source: Amazon listing research — ONLY cite facts from this sheet; do not invent specs):
+- ASIN: ${factSheet.asin}
+- Title: ${factSheet.title}
+${factSheet.price ? `- Price: ${factSheet.price} ${factSheet.currency}` : ""}
+${factSheet.rating ? `- Amazon rating: ${factSheet.rating}/5 (${factSheet.reviewCount ?? "n/a"} reviews)` : ""}
+- Feature bullets:
+${factSheet.bullets.map((bullet) => `  • ${bullet}`).join("\n")}
+- Verified facts (must respect in pros, cons, and body):
+${factSheet.verifiedFacts.map((fact) => `  • ${fact}`).join("\n")}
+- Specs JSON:
+${JSON.stringify(factSheet.specs, null, 2)}
+`.trim();
 }
 
 export function buildReviewPrompt(input: ReviewGenerationInput): string {
@@ -47,6 +64,7 @@ ${formatSpecs(input.product.specs)}
 
 Target SEO keyword: ${input.targetKeyword}
 Site name: ${input.siteName}
+${input.factSheet ? `\n${formatFactSheet(input.factSheet)}\n` : ""}
 
 Writing template: ${template.id}
 Opening style: ${template.openingStyle}
@@ -58,8 +76,8 @@ Requirements:
 - Minimum 1,500 words in the content body.
 - Use markdown only — never HTML tags such as <h2> or <p>.
 - Use markdown H2 headings (## Section Title) matching the section order above.
-- Do NOT invent image URLs. Do not use example.com, placeholder hosts, or Amazon image URLs unless provided in the product data.
-- Editorial photos are injected automatically after each H2 section at publish time — focus on prose, not inline images.
+- Do NOT invent image URLs. Editorial photos are injected automatically after each H2 section at publish time — focus on prose, not inline images.
+- If a verified fact sheet is provided, every spec, feature claim, and limitation must come from that sheet. Do not contradict verified facts (e.g. do not claim a feature is missing if the fact sheet says it exists).
 - Do NOT expose internal SEO labels such as "Target keyword" in the content body.
 - Put the affiliate disclosure only once near the end of the article body.
 - Include practical analysis grounded in the product specs and features.

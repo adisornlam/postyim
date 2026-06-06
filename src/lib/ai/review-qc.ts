@@ -110,9 +110,14 @@ export async function evaluateReviewById(reviewId: string): Promise<ReviewQcRepo
   }
 
   const assets = await db
-    .select({ url: mediaAssets.url })
+    .select({
+      url: mediaAssets.url,
+      altText: mediaAssets.altText,
+      sortOrder: mediaAssets.sortOrder,
+    })
     .from(mediaAssets)
-    .where(eq(mediaAssets.productId, row.product.id));
+    .where(eq(mediaAssets.productId, row.product.id))
+    .orderBy(mediaAssets.sortOrder);
 
   const otherContents = await db
     .select({ id: reviews.id, content: reviews.content })

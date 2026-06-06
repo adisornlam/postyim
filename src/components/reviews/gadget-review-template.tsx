@@ -15,10 +15,9 @@ import { ReviewTableOfContents } from "@/components/reviews/review-table-of-cont
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_DISCLOSURE, AFFILIATE_DISCLOSURE_MARKERS } from "@/lib/ai/constants";
 import {
-  getEditorialImagesForProduct,
-  getHeroGalleryImages,
-  type EditorialImage,
-} from "@/lib/reviews/editorial-images";
+  getSectionEditorialImages,
+  resolveHeroGalleryImages,
+} from "@/lib/reviews/review-images";
 import { enrichReviewContent } from "@/lib/reviews/enrich-review-content";
 import {
   extractMarkdownHeadings,
@@ -59,6 +58,7 @@ interface GadgetReviewTemplateProps {
   mediaAssets?: Array<{
     url: string;
     altText?: string | null;
+    sortOrder?: number;
   }>;
   related?: Array<{
     review: { slug: string; title: string; rating?: string | null };
@@ -84,33 +84,13 @@ function contentHasDisclosure(content: string): boolean {
 function resolveReviewImages(
   product: GadgetReviewTemplateProps["product"],
   mediaAssets: GadgetReviewTemplateProps["mediaAssets"],
-): EditorialImage[] {
-  if (mediaAssets && mediaAssets.length > 0) {
-    return mediaAssets.map((asset, index) => ({
-      url: asset.url,
-      alt: asset.altText ?? product.title,
-      caption: asset.altText ?? undefined,
-      ...(index === 0 ? {} : {}),
-    }));
-  }
-
-  const editorial = getEditorialImagesForProduct({
+) {
+  return resolveHeroGalleryImages({
+    productTitle: product.title,
     externalId: product.externalId,
-    title: product.title,
+    productImageUrl: product.imageUrl,
+    mediaAssets,
   });
-
-  if (product.imageUrl && !editorial.some((image) => image.url === product.imageUrl)) {
-    return [
-      {
-        url: product.imageUrl,
-        alt: product.title,
-        caption: `${product.title} product photo.`,
-      },
-      ...editorial,
-    ];
-  }
-
-  return editorial;
 }
 
 export function GadgetReviewTemplate({
@@ -131,9 +111,12 @@ export function GadgetReviewTemplate({
       ? "See current price on Amazon"
       : `$${product.price} ${product.currency}`;
 
-  const editorialImages = resolveReviewImages(product, mediaAssets);
-  const heroImages = getHeroGalleryImages(editorialImages, 3);
-  const enrichedContent = enrichReviewContent(review.content, editorialImages);
+  const heroImages = resolveReviewImages(product, mediaAssets);
+  const sectionImages = getSectionEditorialImages({
+    externalId: product.externalId,
+    title: product.title,
+  });
+  const enrichedContent = enrichReviewContent(review.content, sectionImages);
   const headings = extractMarkdownHeadings(enrichedContent);
   const showStandaloneDisclosure = !contentHasDisclosure(review.content);
 

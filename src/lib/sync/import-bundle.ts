@@ -7,6 +7,7 @@ import {
   categories,
   contentQualityScores,
   keywords,
+  mediaAssets,
   products,
   reviews,
 } from "@/db/schema";
@@ -15,7 +16,7 @@ import {
   buildDuplicateHash,
   buildProductSlug,
 } from "@/lib/products/slug";
-import { syncProductMediaAssets } from "@/lib/products/media-sync";
+import { syncProductMediaFromBundle } from "@/lib/products/media-sync";
 import type { SyncBundle, SyncPushResult } from "@/lib/sync/types";
 import { SYNC_BUNDLE_VERSION } from "@/lib/sync/types";
 
@@ -216,10 +217,11 @@ export async function importSyncBundle(bundle: SyncBundle): Promise<SyncPushResu
     productCreated = true;
   }
 
-  await syncProductMediaAssets({
+  await syncProductMediaFromBundle({
     productId,
-    imageUrl: bundle.product.imageUrl,
     title: bundle.product.title,
+    imageUrl: bundle.product.imageUrl,
+    mediaAssets: bundle.product.mediaAssets,
   });
 
   if (!bundle.review) {

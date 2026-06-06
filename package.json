@@ -17,6 +17,7 @@
     "pipeline:run": "tsx scripts/run-pipeline.ts",
     "review:fix-qc": "tsx scripts/fix-published-review-qc.ts",
     "review:fix-content": "tsx scripts/fix-review-content-and-sync.ts",
+    "research:import": "tsx scripts/import-research-and-regenerate.ts",
     "review:audit": "tsx scripts/audit-review.ts",
     "sync:status": "tsx scripts/sync-to-production.ts status",
     "sync:push": "tsx scripts/sync-to-production.ts push"

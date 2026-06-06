@@ -1,4 +1,4 @@
-import { getEditorialImagesForProduct } from "@/lib/reviews/editorial-images";
+import { getSectionEditorialImages } from "@/lib/reviews/review-images";
 import { enrichReviewContent } from "@/lib/reviews/enrich-review-content";
 import {
   contentHasHtmlHeadings,
@@ -7,6 +7,8 @@ import {
   isAllowedImageUrl,
   isPlaceholderImageUrl,
 } from "@/lib/reviews/image-urls";
+import { isAmazonProductImageUrl } from "@/lib/products/amazon-image-url";
+import { resolveHeroGalleryImages } from "@/lib/reviews/review-images";
 import { QUALITY_THRESHOLDS } from "@/lib/ai/constants";
 
 export interface PublishReadinessInput {
@@ -16,7 +18,7 @@ export interface PublishReadinessInput {
     externalId?: string | null;
     imageUrl?: string | null;
   };
-  mediaAssets?: Array<{ url: string }>;
+  mediaAssets?: Array<{ url: string; altText?: string | null; sortOrder?: number }>;
 }
 
 export interface PublishReadinessResult {
@@ -34,39 +36,22 @@ export interface PublishReadinessResult {
   };
 }
 
-function resolveHeroImages(input: PublishReadinessInput) {
-  if (input.mediaAssets && input.mediaAssets.length > 0) {
-    return input.mediaAssets.map((asset) => asset.url);
-  }
-
-  const editorial = getEditorialImagesForProduct({
-    externalId: input.product.externalId,
-    title: input.product.title,
-  });
-
-  const urls = editorial.map((image) => image.url);
-
-  if (
-    input.product.imageUrl &&
-    !urls.includes(input.product.imageUrl)
-  ) {
-    return [input.product.imageUrl, ...urls];
-  }
-
-  return urls;
-}
-
 export function evaluatePublishReadiness(
   input: PublishReadinessInput,
 ): PublishReadinessResult {
-  const editorialImages = getEditorialImagesForProduct({
+  const sectionImages = getSectionEditorialImages({
     externalId: input.product.externalId,
     title: input.product.title,
   });
 
-  const enrichedContent = enrichReviewContent(input.content, editorialImages);
+  const enrichedContent = enrichReviewContent(input.content, sectionImages);
   const bodyImageUrls = extractMarkdownImageUrls(enrichedContent);
-  const heroImageUrls = resolveHeroImages(input);
+  const heroImages = resolveHeroGalleryImages({
+    productTitle: input.product.title,
+    externalId: input.product.externalId,
+    productImageUrl: input.product.imageUrl,
+    mediaAssets: input.mediaAssets,
+  });
 
   const bodyImagesValid =
     bodyImageUrls.length === 0 ||
@@ -75,6 +60,10 @@ export function evaluatePublishReadiness(
     );
 
   const markdownHeadingCount = countMarkdownHeadings(enrichedContent);
+  const hasProductImage =
+    Boolean(input.product.imageUrl) &&
+    (isAmazonProductImageUrl(input.product.imageUrl ?? "") ||
+      isAllowedImageUrl(input.product.imageUrl ?? ""));
 
   const checklist = {
     noHtmlHeadings: !contentHasHtmlHeadings(input.content),
@@ -82,15 +71,13 @@ export function evaluatePublishReadiness(
       markdownHeadingCount >= QUALITY_THRESHOLDS.minMarkdownHeadings,
     bodyImagesValid,
     minBodyImages: bodyImageUrls.length >= QUALITY_THRESHOLDS.minBodyImages,
-    productHeroImage:
-      Boolean(input.product.imageUrl) &&
-      isAllowedImageUrl(input.product.imageUrl ?? ""),
-    minHeroImages: heroImageUrls.length >= QUALITY_THRESHOLDS.minHeroImages,
+    productHeroImage: hasProductImage,
+    minHeroImages: heroImages.length >= QUALITY_THRESHOLDS.minHeroImages,
   };
 
   return {
     enrichedContent,
-    heroImageCount: heroImageUrls.length,
+    heroImageCount: heroImages.length,
     bodyImageCount: bodyImageUrls.length,
     markdownHeadingCount,
     checklist,
