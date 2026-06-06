@@ -4,10 +4,13 @@ import { db } from "@/db";
 import {
   contentQualityScores,
   keywords,
+  mediaAssets,
   products,
   reviews,
 } from "@/db/schema";
 import { evaluateReviewQuality } from "@/lib/ai/quality-gate";
+import { QUALITY_THRESHOLDS } from "@/lib/ai/constants";
+import { evaluatePublishReadiness } from "@/lib/reviews/publish-readiness";
 import { scoreKeywordRelevance } from "@/lib/seo/resolve-target-keyword";
 
 export interface ReviewQcReport {
@@ -61,6 +64,30 @@ function buildFailures(
   if (!checklist.seoKeywordInContent) {
     failures.push("Target keyword is missing from the review body.");
   }
+  if (!checklist.noHtmlHeadings) {
+    failures.push("Review content contains raw HTML headings — use markdown ## headings only.");
+  }
+  if (!checklist.hasMarkdownHeadings) {
+    failures.push(
+      `Review needs at least ${QUALITY_THRESHOLDS.minMarkdownHeadings} markdown H2/H3 headings.`,
+    );
+  }
+  if (!checklist.bodyImagesValid) {
+    failures.push("One or more inline images use invalid or placeholder URLs.");
+  }
+  if (!checklist.minBodyImages) {
+    failures.push(
+      `Review needs at least ${QUALITY_THRESHOLDS.minBodyImages} inline images after enrichment.`,
+    );
+  }
+  if (!checklist.productHeroImage) {
+    failures.push("Product hero image is missing or uses an invalid URL.");
+  }
+  if (!checklist.minHeroImages) {
+    failures.push(
+      `Hero gallery needs at least ${QUALITY_THRESHOLDS.minHeroImages} images.`,
+    );
+  }
 
   return failures;
 }
@@ -81,6 +108,11 @@ export async function evaluateReviewById(reviewId: string): Promise<ReviewQcRepo
   if (!row) {
     throw new Error("Review not found");
   }
+
+  const assets = await db
+    .select({ url: mediaAssets.url })
+    .from(mediaAssets)
+    .where(eq(mediaAssets.productId, row.product.id));
 
   const otherContents = await db
     .select({ id: reviews.id, content: reviews.content })
@@ -116,8 +148,19 @@ export async function evaluateReviewById(reviewId: string): Promise<ReviewQcRepo
     externalId: row.product.externalId,
   });
 
+  const publishReadiness = evaluatePublishReadiness({
+    content: row.review.content,
+    product: {
+      title: row.product.title,
+      externalId: row.product.externalId,
+      imageUrl: row.product.imageUrl,
+    },
+    mediaAssets: assets,
+  });
+
   const checklist = {
     ...quality.checklist,
+    ...publishReadiness.checklist,
     keywordRelevance: keywordCheck.passed,
     seoKeywordInTitle: row.review.title
       .toLowerCase()

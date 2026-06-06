@@ -19,6 +19,12 @@ const CHECK_LABELS: Record<string, string> = {
   keywordRelevance: "Keyword matches product",
   seoKeywordInTitle: "Keyword in title",
   seoKeywordInContent: "Keyword in body",
+  noHtmlHeadings: "No raw HTML headings",
+  hasMarkdownHeadings: "Markdown section headings",
+  bodyImagesValid: "Inline images use real URLs",
+  minBodyImages: "Minimum inline images",
+  productHeroImage: "Product hero image valid",
+  minHeroImages: "Hero gallery image count",
 };
 
 export function ReviewQcPanel({

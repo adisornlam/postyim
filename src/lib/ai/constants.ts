@@ -29,6 +29,9 @@ export const QUALITY_THRESHOLDS = {
   minCons: 3,
   metaDescriptionMin: 120,
   metaDescriptionMax: 160,
+  minMarkdownHeadings: 3,
+  minBodyImages: 3,
+  minHeroImages: 2,
 } as const;
 
 export function normalizeMetaDescription(value: string): string {

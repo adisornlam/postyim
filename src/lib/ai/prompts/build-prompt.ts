@@ -56,10 +56,10 @@ ${template.sections.map((section, index) => `${index + 1}. ${section}`).join("\n
 Requirements:
 - Write in English for a global audience.
 - Minimum 1,500 words in the content body.
-- Use markdown with H2 headings matching the section order above.
-- After each major H2 section, include one editorial photo using markdown image syntax:
-  ![descriptive alt text](https://example.com/photo.jpg "Short caption for the reader")
-- Use realistic alt text and captions tied to the section topic. Do not leave long text-only sections without a visual break.
+- Use markdown only — never HTML tags such as <h2> or <p>.
+- Use markdown H2 headings (## Section Title) matching the section order above.
+- Do NOT invent image URLs. Do not use example.com, placeholder hosts, or Amazon image URLs unless provided in the product data.
+- Editorial photos are injected automatically after each H2 section at publish time — focus on prose, not inline images.
 - Do NOT expose internal SEO labels such as "Target keyword" in the content body.
 - Put the affiliate disclosure only once near the end of the article body.
 - Include practical analysis grounded in the product specs and features.

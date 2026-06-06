@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { reviews } from "@/db/schema";
-import { evaluateReviewById } from "@/lib/ai/review-qc";
+import { assertReviewPublishable } from "@/lib/ai/review-qc";
 import { approveReview, publishReview } from "@/lib/reviews/actions";
 import { exportSyncBundleByReviewId } from "@/lib/sync/export-bundle";
 import { pushBundleToRemote } from "@/lib/sync/client";
@@ -26,16 +26,12 @@ async function main() {
     throw new Error(`Review not found: ${REVIEW_SLUG}`);
   }
 
-  const qc = await evaluateReviewById(review.id);
+  const qc = await assertReviewPublishable(review.id);
   console.log("QC:", {
     passed: qc.passed,
     overallScore: qc.overallScore,
     failures: qc.failures,
   });
-
-  if (!qc.passed) {
-    process.exit(1);
-  }
 
   await approveReview(review.id);
   await publishReview(review.id);

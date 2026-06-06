@@ -45,16 +45,25 @@ const OFFICE_IMAGES: EditorialImage[] = [
   },
 ];
 
-function imagesForExternalId(externalId: string): EditorialImage[] {
-  if (externalId.includes("LAMP")) {
+function imagesForProduct(input: {
+  externalId?: string | null;
+  title: string;
+}): EditorialImage[] {
+  const externalId = input.externalId?.toUpperCase() ?? "";
+  const title = input.title.toLowerCase();
+
+  if (externalId.includes("LAMP") || /\blamp\b/.test(title)) {
     return DESK_LAMP_IMAGES;
   }
 
-  if (externalId.includes("DESK")) {
+  if (
+    externalId.includes("DESK") ||
+    (/\bdesk\b/.test(title) && !/\blamp\b/.test(title))
+  ) {
     return OFFICE_IMAGES;
   }
 
-  if (externalId.includes("CHAIR")) {
+  if (externalId.includes("CHAIR") || /\bchair\b/.test(title)) {
     return [
       {
         url: "https://images.unsplash.com/photo-1580480055273-228ff5388ef8?auto=format&fit=crop&w=1200&q=80",
@@ -72,9 +81,7 @@ export function getEditorialImagesForProduct(input: {
   externalId?: string | null;
   title: string;
 }): EditorialImage[] {
-  const fromCatalog = input.externalId
-    ? imagesForExternalId(input.externalId.toUpperCase())
-    : OFFICE_IMAGES;
+  const fromCatalog = imagesForProduct(input);
 
   return fromCatalog.map((image) => ({
     ...image,

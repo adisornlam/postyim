@@ -13,6 +13,9 @@ import {
 import { generateProductReview } from "@/lib/ai";
 import { ensureDisclosure, evaluateReviewQuality } from "@/lib/ai/quality-gate";
 import { getSiteName, getSiteUrl } from "@/lib/env";
+import { enrichReviewContent } from "@/lib/reviews/enrich-review-content";
+import { getEditorialImagesForProduct } from "@/lib/reviews/editorial-images";
+import { evaluatePublishReadiness } from "@/lib/reviews/publish-readiness";
 import { resolveTargetKeyword as resolveProductKeyword } from "@/lib/seo/resolve-target-keyword";
 import {
   finishJobRun,
@@ -225,9 +228,16 @@ export async function generateReviewForProduct(
     siteName: getSiteName(),
   });
 
+  const editorialImages = getEditorialImagesForProduct({
+    externalId: product.externalId,
+    title: product.title,
+  });
+
   const reviewContent = {
     ...generation.review,
-    content: ensureDisclosure(generation.review.content),
+    content: ensureDisclosure(
+      enrichReviewContent(generation.review.content, editorialImages),
+    ),
   };
 
   const quality = evaluateReviewQuality({
@@ -237,6 +247,19 @@ export async function generateReviewForProduct(
     productTitle: product.title,
     externalId: product.externalId,
   });
+
+  const publishReadiness = evaluatePublishReadiness({
+    content: reviewContent.content,
+    product: {
+      title: product.title,
+      externalId: product.externalId,
+      imageUrl: product.imageUrl,
+    },
+  });
+
+  const qualityPassed =
+    quality.passed &&
+    Object.values(publishReadiness.checklist).every(Boolean);
 
   const versionNumber = await getNextVersionNumber(review.id);
   const isInitialGeneration = versionNumber === 1;
@@ -258,7 +281,7 @@ export async function generateReviewForProduct(
   const nextStatus =
     options?.preservePublished && previousStatus
       ? previousStatus
-      : quality.passed
+      : qualityPassed
         ? "pending_review"
         : "failed";
 
@@ -287,14 +310,19 @@ export async function generateReviewForProduct(
     specAccuracyScore: quality.specAccuracyScore,
     seoScore: quality.seoScore,
     overallScore: quality.overallScore,
-    checklist: quality.checklist,
-    passed: quality.passed,
+    checklist: {
+      ...quality.checklist,
+      ...publishReadiness.checklist,
+    },
+    passed: qualityPassed,
   });
 
   return {
     review: savedReview,
     generation,
     quality,
+    qualityPassed,
+    publishReadiness,
   };
 }
 
@@ -370,9 +398,9 @@ export async function generateReviewsForQueue(input?: {
         results.push({
           productId: row.product.id,
           reviewId: result.review.id,
-          status: result.quality.passed ? "pending_review" : "failed",
+          status: result.qualityPassed ? "pending_review" : "failed",
           mode: result.generation.mode,
-          qualityPassed: result.quality.passed,
+          qualityPassed: result.qualityPassed,
           overallScore: result.quality.overallScore,
         });
 
@@ -382,7 +410,7 @@ export async function generateReviewsForQueue(input?: {
           metadata: {
             reviewId: result.review.id,
             mode: result.generation.mode,
-            passed: result.quality.passed,
+            passed: result.qualityPassed,
             overallScore: result.quality.overallScore,
           },
         });

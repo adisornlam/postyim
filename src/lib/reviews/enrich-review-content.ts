@@ -1,4 +1,5 @@
 import { DEFAULT_DISCLOSURE } from "@/lib/ai/constants";
+import { normalizeReviewContent } from "@/lib/reviews/normalize-content";
 
 import type { EditorialImage } from "./editorial-images";
 
@@ -75,7 +76,8 @@ export function enrichReviewContent(
   images: EditorialImage[],
 ): string {
   const cleaned = stripEditorialNoise(content);
-  return injectSectionImages(cleaned, images);
+  const normalized = normalizeReviewContent(cleaned, images);
+  return injectSectionImages(normalized, images);
 }
 
 export function buildFigureId(caption: string): string {
