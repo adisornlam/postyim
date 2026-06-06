@@ -35,6 +35,7 @@ export interface ReviewGenerationInput {
   templateId: string;
   siteName: string;
   factSheet?: ProductResearch;
+  retryFeedback?: string;
 }
 
 export interface ReviewGenerationResult {

@@ -65,6 +65,7 @@ ${formatSpecs(input.product.specs)}
 Target SEO keyword: ${input.targetKeyword}
 Site name: ${input.siteName}
 ${input.factSheet ? `\n${formatFactSheet(input.factSheet)}\n` : ""}
+${input.retryFeedback ? `\nRevision note:\n${input.retryFeedback}\n` : ""}
 
 Writing template: ${template.id}
 Opening style: ${template.openingStyle}
@@ -73,7 +74,8 @@ ${template.sections.map((section, index) => `${index + 1}. ${section}`).join("\n
 
 Requirements:
 - Write in English for a global audience.
-- Minimum 1,500 words in the content body.
+- Minimum 1,800 words in the content body (hard requirement — shorter drafts fail QC).
+- Include the exact phrase "${input.targetKeyword}" at least once naturally in the body.
 - Use markdown only — never HTML tags such as <h2> or <p>.
 - Use markdown H2 headings (## Section Title) matching the section order above.
 - Do NOT invent image URLs. Editorial photos are injected automatically after each H2 section at publish time — focus on prose, not inline images.

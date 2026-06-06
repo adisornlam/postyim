@@ -8,7 +8,7 @@ import {
   products,
   reviews,
 } from "@/db/schema";
-import { evaluateReviewQuality } from "@/lib/ai/quality-gate";
+import { evaluateReviewQuality, contentIncludesTargetKeyword } from "@/lib/ai/quality-gate";
 import { QUALITY_THRESHOLDS } from "@/lib/ai/constants";
 import { evaluatePublishReadiness } from "@/lib/reviews/publish-readiness";
 import { scoreKeywordRelevance } from "@/lib/seo/resolve-target-keyword";
@@ -178,9 +178,10 @@ export async function evaluateReviewById(reviewId: string): Promise<ReviewQcRepo
     seoKeywordInTitle: row.review.title
       .toLowerCase()
       .includes(targetKeyword.toLowerCase()),
-    seoKeywordInContent: row.review.content
-      .toLowerCase()
-      .includes(targetKeyword.toLowerCase()),
+    seoKeywordInContent: contentIncludesTargetKeyword(
+      row.review.content,
+      targetKeyword,
+    ),
   };
 
   const failures = buildFailures(checklist, keywordCheck.reason);

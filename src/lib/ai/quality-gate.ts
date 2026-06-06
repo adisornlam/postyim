@@ -54,6 +54,32 @@ function countWords(text: string): number {
     .filter(Boolean).length;
 }
 
+const KEYWORD_STOP_WORDS = new Set(["for", "the", "and", "a", "an", "to", "in", "of"]);
+
+export function contentIncludesTargetKeyword(
+  content: string,
+  targetKeyword: string,
+): boolean {
+  const normalizedContent = content.toLowerCase();
+  const keyword = targetKeyword.trim().toLowerCase();
+
+  if (!keyword) {
+    return false;
+  }
+
+  if (normalizedContent.includes(keyword)) {
+    return true;
+  }
+
+  const tokens = keyword
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !KEYWORD_STOP_WORDS.has(word));
+
+  return tokens.length > 0 && tokens.every((token) => normalizedContent.includes(token));
+}
+
+export { countWords };
+
 function tokenize(text: string): Set<string> {
   return new Set(
     text
@@ -246,7 +272,7 @@ function scoreSeo(review: GeneratedReview): number {
     score += 30;
   }
 
-  if (review.content.toLowerCase().includes(review.targetKeyword.toLowerCase())) {
+  if (contentIncludesTargetKeyword(review.content, review.targetKeyword)) {
     score += 30;
   }
 
@@ -308,8 +334,9 @@ export function evaluateReviewQuality(input: QualityGateInput): QualityGateResul
     seoKeywordInTitle: input.review.title
       .toLowerCase()
       .includes(input.review.targetKeyword.toLowerCase()),
-    seoKeywordInContent: normalizedContent.includes(
-      input.review.targetKeyword.toLowerCase(),
+    seoKeywordInContent: contentIncludesTargetKeyword(
+      normalizedContent,
+      input.review.targetKeyword,
     ),
   };
 

@@ -12,8 +12,8 @@ import {
   reviews,
 } from "@/db/schema";
 import { generateProductReview } from "@/lib/ai";
-import { ensureDisclosure, evaluateReviewQuality } from "@/lib/ai/quality-gate";
-import { normalizeReviewTitle } from "@/lib/ai/constants";
+import { ensureDisclosure, evaluateReviewQuality, countWords } from "@/lib/ai/quality-gate";
+import { normalizeReviewTitle, QUALITY_THRESHOLDS } from "@/lib/ai/constants";
 import { getSiteName, getSiteUrl } from "@/lib/env";
 import { enrichReviewContent } from "@/lib/reviews/enrich-review-content";
 import { getSectionProductImages } from "@/lib/reviews/review-images";
@@ -172,6 +172,19 @@ export async function generateReviewForProduct(
     .limit(1);
 
   const previousStatus = review?.status;
+  const preserveContentSnapshot =
+    options?.preservePublished && review && previousStatus === "published"
+      ? {
+          slug: review.slug,
+          title: review.title,
+          metaDescription: review.metaDescription,
+          content: review.content,
+          pros: review.pros,
+          cons: review.cons,
+          rating: review.rating,
+          wordCount: review.wordCount,
+        }
+      : null;
 
   if (!review) {
     [review] = await db
@@ -221,7 +234,7 @@ export async function generateReviewForProduct(
     .where(eq(mediaAssets.productId, product.id))
     .orderBy(mediaAssets.sortOrder);
 
-  const generation = await generateProductReview({
+  const generationInput = {
     product: {
       id: product.id,
       title: product.title,
@@ -242,7 +255,7 @@ export async function generateReviewForProduct(
     templateId: "",
     siteName: getSiteName(),
     factSheet,
-  });
+  };
 
   const sectionImages = getSectionProductImages({
     productTitle: product.title,
@@ -251,21 +264,58 @@ export async function generateReviewForProduct(
     researchImages: factSheet?.productImages,
   });
 
-  const reviewContent = {
+  const MAX_GENERATION_ATTEMPTS = 2;
+  let generation = await generateProductReview(generationInput);
+  let reviewContent = {
     ...generation.review,
     title: normalizeReviewTitle(generation.review.title, keyword.keyword),
     content: ensureDisclosure(
       enrichReviewContent(generation.review.content, sectionImages),
     ),
   };
-
-  const quality = evaluateReviewQuality({
+  let quality = evaluateReviewQuality({
     review: reviewContent,
     productSpecs: (product.specs ?? {}) as Record<string, unknown>,
     existingReviewContents: await getExistingReviewContents(review.id),
     productTitle: product.title,
     externalId: product.externalId,
   });
+
+  for (let attempt = 2; attempt <= MAX_GENERATION_ATTEMPTS; attempt += 1) {
+    const needsRetry =
+      !quality.checklist.wordCountMin1500 ||
+      !quality.checklist.seoKeywordInContent;
+
+    if (!needsRetry) {
+      break;
+    }
+
+    const wordCount = countWords(reviewContent.content);
+    generation = await generateProductReview({
+      ...generationInput,
+      retryFeedback: [
+        `The previous draft was ${wordCount} words; write at least ${QUALITY_THRESHOLDS.minWordCount} words.`,
+        `Include the exact phrase "${keyword.keyword}" at least once in the body.`,
+        "Expand each H2 section with concrete detail from the verified fact sheet.",
+      ].join(" "),
+    });
+
+    reviewContent = {
+      ...generation.review,
+      title: normalizeReviewTitle(generation.review.title, keyword.keyword),
+      content: ensureDisclosure(
+        enrichReviewContent(generation.review.content, sectionImages),
+      ),
+    };
+
+    quality = evaluateReviewQuality({
+      review: reviewContent,
+      productSpecs: (product.specs ?? {}) as Record<string, unknown>,
+      existingReviewContents: await getExistingReviewContents(review.id),
+      productTitle: product.title,
+      externalId: product.externalId,
+    });
+  }
 
   const publishReadiness = evaluatePublishReadiness({
     content: reviewContent.content,
@@ -280,6 +330,26 @@ export async function generateReviewForProduct(
   const qualityPassed =
     quality.passed &&
     Object.values(publishReadiness.checklist).every(Boolean);
+
+  if (preserveContentSnapshot && !qualityPassed) {
+    const [restoredReview] = await db
+      .update(reviews)
+      .set({
+        ...preserveContentSnapshot,
+        status: previousStatus,
+        updatedAt: new Date(),
+      })
+      .where(eq(reviews.id, review.id))
+      .returning();
+
+    return {
+      review: restoredReview,
+      generation,
+      quality,
+      qualityPassed: false,
+      publishReadiness,
+    };
+  }
 
   const versionNumber = await getNextVersionNumber(review.id);
   const isInitialGeneration = versionNumber === 1;
