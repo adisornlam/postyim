@@ -105,7 +105,7 @@ Selection criteria (rank by overall affiliate + editorial value):
 
 Return exactly ${input.limit} candidates, sorted by overallScore (highest first).
 
-For each candidate include:
+For each candidate, write a numbered section in plain text with:
 - asin (10 chars, starts with B)
 - title (Amazon listing title)
 - targetKeyword (commercial SEO phrase, e.g. "best LED desk lamp for home office")
@@ -118,7 +118,24 @@ For each candidate include:
 - demandSignals (bullet-style strings: review volume, search intent, use case)
 - risks (0–3 strings: smart-home gaps, low commission, saturated niche, etc.)
 
-Also return summary (short paragraph of your research approach) and searchedQueries (Google queries you used).`;
+Also list the Google search queries you used.`;
+}
+
+export function buildProductDiscoveryStructurePrompt(input: {
+  limit: number;
+}): string {
+  return `Convert the research notes below into structured JSON for Postyim product discovery.
+
+Rules:
+- Output ONLY valid JSON matching the required schema (no markdown).
+- Include exactly up to ${input.limit} candidates, sorted by overallScore descending.
+- Use only ASINs mentioned in the research notes. Never invent ASINs.
+- Normalize ASINs to uppercase 10-character Amazon IDs starting with B.
+- If a field is missing from research, omit optional fields rather than guessing.
+- currency must be "USD" when price is present.
+- estimatedCommissionRate is a decimal (e.g. 0.045 for 4.5%).
+- risks may be an empty array.
+- searchedQueries must list the Google queries from the research notes.`;
 }
 
 export type ProductDiscoveryGeminiPayload = ProductDiscoveryResult;

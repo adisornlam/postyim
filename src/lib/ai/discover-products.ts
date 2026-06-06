@@ -16,6 +16,7 @@ import {
 import { generateMockProductDiscovery } from "@/lib/ai/mock/discover-products";
 import {
   buildProductDiscoveryPrompt,
+  buildProductDiscoveryStructurePrompt,
   productDiscoveryJsonSchema,
   type ProductDiscoveryGeminiPayload,
 } from "@/lib/ai/prompts/discover-products";
@@ -114,7 +115,7 @@ export async function discoverProductsForCampaign(
     };
   }
 
-  const prompt = buildProductDiscoveryPrompt({
+  const searchPrompt = buildProductDiscoveryPrompt({
     campaignName: row.campaign.name,
     categoryName: row.category?.name,
     keywords,
@@ -129,7 +130,8 @@ export async function discoverProductsForCampaign(
 
   const response = await generateDiscoveryJson<ProductDiscoveryGeminiPayload>({
     model,
-    prompt,
+    searchPrompt,
+    structurePrompt: buildProductDiscoveryStructurePrompt({ limit }),
     schema: productDiscoveryJsonSchema,
   });
 

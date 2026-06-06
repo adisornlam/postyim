@@ -41,34 +41,43 @@ export async function getQualityEvaluationModel(): Promise<string> {
 
 export async function generateDiscoveryJson<T>(input: {
   model: string;
-  prompt: string;
+  searchPrompt: string;
+  structurePrompt: string;
   schema: Record<string, unknown>;
 }): Promise<{ data: T; text: string; usage?: { promptTokens?: number; outputTokens?: number } }> {
   const ai = await getGeminiClient();
 
-  const response = await ai.models.generateContent({
+  const searchResponse = await ai.models.generateContent({
     model: input.model,
-    contents: input.prompt,
+    contents: input.searchPrompt,
     config: {
-      responseMimeType: "application/json",
-      responseSchema: input.schema,
       temperature: 0.35,
       tools: [{ googleSearch: {} }],
     },
   });
 
-  const text = response.text?.trim();
+  const researchText = searchResponse.text?.trim();
 
-  if (!text) {
-    throw new Error("Gemini returned an empty discovery response");
+  if (!researchText) {
+    throw new Error("Gemini returned empty discovery research");
   }
 
+  const structured = await generateJson<T>({
+    model: input.model,
+    prompt: `${input.structurePrompt}\n\n---\nResearch notes:\n${researchText}`,
+    schema: input.schema,
+  });
+
   return {
-    data: JSON.parse(text) as T,
-    text,
+    data: structured.data,
+    text: structured.text,
     usage: {
-      promptTokens: response.usageMetadata?.promptTokenCount,
-      outputTokens: response.usageMetadata?.candidatesTokenCount,
+      promptTokens:
+        (searchResponse.usageMetadata?.promptTokenCount ?? 0) +
+        (structured.usage?.promptTokens ?? 0),
+      outputTokens:
+        (searchResponse.usageMetadata?.candidatesTokenCount ?? 0) +
+        (structured.usage?.outputTokens ?? 0),
     },
   };
 }
